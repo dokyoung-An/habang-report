@@ -236,6 +236,16 @@ export default function VisualCheckPage() {
     setFormItems(newFormItems)
   }
 
+  // 단일 이미지 업로드 (각 영역에서 1장씩)
+  const handleSingleImageUpload = async (index: number, imageType: 'fullImage' | 'closeupImage', file: File) => {
+    const newFormItems = [...formItems]
+    newFormItems[index] = {
+      ...newFormItems[index],
+      [imageType]: file
+    }
+    setFormItems(newFormItems)
+  }
+
   const compressImage = async (file: File): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const img = new Image()
@@ -611,20 +621,20 @@ export default function VisualCheckPage() {
 
                 {/* 이미지 업로드 섹션 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                  {/* 전체 사진 */}
+                  {/* 근거리 사진 */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      전체 사진 <span className="text-red-500">*</span>
+                      근거리 사진 <span className="text-red-500">*</span>
                     </label>
                     <div 
                       className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors cursor-pointer"
-                      onClick={() => document.getElementById(`image-upload-${index}`)?.click()}
+                      onClick={() => document.getElementById(`multiple-image-upload-${index}`)?.click()}
                     >
                       {form.fullImage ? (
                         <div className="relative">
                           <img
                             src={form.fullImage instanceof File ? URL.createObjectURL(form.fullImage) : form.fullImage}
-                            alt="전체 사진"
+                            alt="근거리 사진"
                             className="w-full h-32 object-cover rounded-lg"
                           />
                           <button
@@ -641,26 +651,26 @@ export default function VisualCheckPage() {
                       ) : (
                         <div className="space-y-1">
                           <div className="text-2xl text-gray-400">📷</div>
-                          <p className="text-xs text-gray-500">전체 사진</p>
+                          <p className="text-xs text-gray-500">근거리 사진</p>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {/* 확대 사진 */}
+                  {/* 원거리 사진 */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      확대 사진 <span className="text-red-500">*</span>
+                      원거리 사진 <span className="text-red-500">*</span>
                     </label>
                     <div 
                       className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors cursor-pointer"
-                      onClick={() => document.getElementById(`image-upload-${index}`)?.click()}
+                      onClick={() => document.getElementById(`closeup-image-upload-${index}`)?.click()}
                     >
                       {form.closeupImage ? (
                         <div className="relative">
                           <img
                             src={form.closeupImage instanceof File ? URL.createObjectURL(form.closeupImage) : form.closeupImage}
-                            alt="확대 사진"
+                            alt="원거리 사진"
                             className="w-full h-32 object-cover rounded-lg"
                           />
                           <button
@@ -677,17 +687,18 @@ export default function VisualCheckPage() {
                       ) : (
                         <div className="space-y-1">
                           <div className="text-2xl text-gray-400">📷</div>
-                          <p className="text-xs text-gray-500">확대 사진</p>
+                          <p className="text-xs text-gray-500">원거리 사진</p>
                         </div>
                       )}
                     </div>
                   </div>
 
-               
+                 <span className="text-xs text-gray-500">- 근거리 사진 영역을 클릭하면 한 번에 사진 2장을 입력할 수 있습니다.</span>
                 </div>
 
-                {/* 이미지 업로드 버튼 */}
+                {/* 이미지 업로드 버튼 - 각 영역별로 분리 */}
                 <div className="text-center mt-4">
+                  {/* 근거리 사진 클릭 시 2장 선택 (multiple) */}
                   <input
                     type="file"
                     multiple
@@ -699,7 +710,20 @@ export default function VisualCheckPage() {
                       }
                     }}
                     className="hidden"
-                    id={`image-upload-${index}`}
+                    id={`multiple-image-upload-${index}`}
+                  />
+                  
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const files = e.target.files
+                      if (files && files[0]) {
+                        handleSingleImageUpload(index, 'closeupImage', files[0])
+                      }
+                    }}
+                    className="hidden"
+                    id={`closeup-image-upload-${index}`}
                   />
                 </div>
               </div>
