@@ -99,7 +99,7 @@ export default function BasicInfoPage() {
                   동
                 </label>
                 <input
-                  type="text"
+                  type="number"
                   id="dong"
                   name="dong"
                   required
@@ -115,7 +115,7 @@ export default function BasicInfoPage() {
                   호수
                 </label>
                 <input
-                  type="text"
+                  type="number"
                   id="ho"
                   name="ho"
                   required

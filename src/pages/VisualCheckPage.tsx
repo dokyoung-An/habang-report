@@ -209,12 +209,20 @@ export default function VisualCheckPage() {
   }
 
   const updateFormItemImages = (index: number, files: File[]) => {
+    // 최대 2장만 허용
+    const selectedFiles = files.slice(0, 2)
+    
+    // 2장 이상 선택 시 경고
+    if (files.length > 2) {
+      alert('사진은 최대 2장까지만 선택 가능합니다.\n첫 번째 사진은 전체 사진, 두 번째 사진은 확대 사진으로 저장됩니다.')
+    }
+    
     const newFormItems = [...formItems]
     newFormItems[index] = {
       ...newFormItems[index],
-      fullImage: files[0] || null,
-      closeupImage: files[1] || null,
-      angleImage: files[2] || null
+      fullImage: selectedFiles[0] || null,
+      closeupImage: selectedFiles[1] || null,
+      angleImage: null
     }
     setFormItems(newFormItems)
   }
@@ -604,7 +612,7 @@ export default function VisualCheckPage() {
             {/* 안내 문구 */}
             <div className="text-sm text-gray-600 space-y-1 bg-blue-50 p-4 rounded-lg">
               <p className="font-medium">📌 안내사항</p>
-              <p>* 여러 장을 선택하면 순서대로 전체사진 → 확대사진 → 다른각도사진에 할당됩니다</p>
+              <p>* 사진은 최대 2장까지만 선택 가능합니다 (전체사진, 확대사진)</p>
               <p>* 사진은 5MB미만의 용량 파일만 등록이 가능합니다.</p>
             </div>
 
