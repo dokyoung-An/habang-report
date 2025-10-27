@@ -296,30 +296,33 @@ export default function VisualCheckPage() {
         .delete()
         .eq('report_id', reportId)
 
-      for (let index = 0; index < formItems.length; index++) {
-        const form = formItems[index]
-        
-        // 필수 항목 검증
-        if (!form.location) {
-          alert(`${index + 1}번째 하자의 위치를 선택해주세요.`)
+      // 빈 항목 자동 필터링 - 필수 항목이 모두 입력된 항목만 처리
+      const validFormItems = formItems.filter(form => 
+        form.location && 
+        form.classification && 
+        form.details.trim() && 
+        form.fullImage && 
+        form.closeupImage
+      )
+
+      // 유효한 항목이 없으면 경고
+      if (validFormItems.length === 0) {
+        alert('최소 1개 이상의 완전한 하자 정보를 입력해주세요.\n(위치, 분류, 내용, 전체사진, 확대사진 모두 입력 필요)')
+        setLoading(false)
+        return
+      }
+
+      // 입력된 항목과 전체 항목 수가 다르면 안내
+      if (validFormItems.length < formItems.length) {
+        const skippedCount = formItems.length - validFormItems.length
+        if (!confirm(`${skippedCount}개의 불완전한 항목이 있습니다. 완성된 항목만 저장하고 계속하시겠습니까?`)) {
           setLoading(false)
           return
         }
-        if (!form.classification) {
-          alert(`${index + 1}번째 하자의 분류를 선택해주세요.`)
-          setLoading(false)
-          return
-        }
-        if (!form.details.trim()) {
-          alert(`${index + 1}번째 하자의 세부 내용을 입력해주세요.`)
-          setLoading(false)
-          return
-        }
-        if (!form.fullImage || !form.closeupImage) {
-          alert(`${index + 1}번째 하자의 전체 사진과 확대 사진을 모두 업로드해주세요.`)
-          setLoading(false)
-          return
-        }
+      }
+
+      for (let index = 0; index < validFormItems.length; index++) {
+        const form = validFormItems[index]
 
         const images = [
           { file: form.fullImage, type: 'full' },
@@ -492,7 +495,7 @@ export default function VisualCheckPage() {
                 </div>
 
                 {/* 이미지 업로드 섹션 */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                   {/* 전체 사진 */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -565,41 +568,7 @@ export default function VisualCheckPage() {
                     </div>
                   </div>
 
-                  {/* 다른각도 사진 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      다른각도 사진
-                    </label>
-                    <div 
-                      className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors cursor-pointer"
-                      onClick={() => document.getElementById(`image-upload-${index}`)?.click()}
-                    >
-                      {form.angleImage ? (
-                        <div className="relative">
-                          <img
-                            src={form.angleImage instanceof File ? URL.createObjectURL(form.angleImage) : form.angleImage}
-                            alt="다른각도 사진"
-                            className="w-full h-32 object-cover rounded-lg"
-                          />
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              removeImage(index, 'angleImage')
-                            }}
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="space-y-1">
-                          <div className="text-2xl text-gray-400">📷</div>
-                          <p className="text-xs text-gray-500">다른각도 사진</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+               
                 </div>
 
                 {/* 이미지 업로드 버튼 */}

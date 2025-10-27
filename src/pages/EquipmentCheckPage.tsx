@@ -57,16 +57,16 @@ export default function EquipmentCheckPage() {
   
   // 라돈 점검 데이터
   const [radonItems, setRadonItems] = useState<RadonItem[]>([
-    { location: '주방/거실', normal: true, exceeds_standard: false, value: '3.84' },
-    { location: '욕실1', normal: true, exceeds_standard: false, value: '3.97' },
-    { location: '침실1', normal: true, exceeds_standard: false, value: '3.95' }
+    { location: '주방/거실', normal: true, exceeds_standard: false, value: '' },
+    { location: '욕실1', normal: true, exceeds_standard: false, value: '' },
+    { location: '침실1', normal: true, exceeds_standard: false, value: '' }
   ])
 
   // 포름알데히드 데이터
   const [formaldehydeItems, setFormaldehydeItems] = useState<FormaldehydeItem[]>([
-    { location: '주방/거실', normal: true, exceeds_standard: false, value: '0.12' },
-    { location: '욕실1', normal: true, exceeds_standard: false, value: '0.13' },
-    { location: '침실1', normal: true, exceeds_standard: false, value: '0.13' }
+    { location: '주방/거실', normal: true, exceeds_standard: false, value: '' },
+    { location: '욕실1', normal: true, exceeds_standard: false, value: '' },
+    { location: '침실1', normal: true, exceeds_standard: false, value: '' }
   ])
 
   // 열화상카메라 점검 데이터
@@ -90,11 +90,11 @@ export default function EquipmentCheckPage() {
 
   // 바닥 레이저 수평 데이터
   const [floorLevelingItems, setFloorLevelingItems] = useState<FloorLevelingItem[]>([
-    { location: '주방', normal: true, defect: false, left_height: '155', right_height: '154', difference: '1' },
-    { location: '거실', normal: true, defect: false, left_height: '155', right_height: '156', difference: '-1' },
-    { location: '침실1', normal: true, defect: false, left_height: '155', right_height: '155', difference: '0' },
-    { location: '침실2', normal: false, defect: true, left_height: '155', right_height: '157', difference: '-2' },
-    { location: '알파룸', normal: true, defect: false, left_height: '155', right_height: '159', difference: '-4' }
+    { location: '주방', normal: true, defect: false, left_height: '', right_height: '', difference: '' },
+    { location: '거실', normal: true, defect: false, left_height: '', right_height: '', difference: '' },
+    { location: '침실1', normal: true, defect: false, left_height: '', right_height: '', difference: '' },
+    { location: '침실2', normal: false, defect: true, left_height: '', right_height: '', difference: '' },
+    { location: '알파룸', normal: true, defect: false, left_height: '', right_height: '', difference: '' }
   ])
 
   // 욕실 및 발코니 바닥 타일 배수 역물매 점검 데이터
