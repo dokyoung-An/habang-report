@@ -13,10 +13,27 @@ export default function BasicInfoPage() {
   })
   const [loading, setLoading] = useState(false)
 
+  const formatPhoneNumber = (value: string) => {
+    // 숫자만 추출
+    const phoneNumber = value.replace(/[^\d]/g, '')
+    
+    // 전화번호 형식에 맞게 '-' 삽입
+    if (phoneNumber.length <= 3) {
+      return phoneNumber
+    } else if (phoneNumber.length <= 7) {
+      return `${phoneNumber.slice(0, 3)}-${phoneNumber.slice(3)}`
+    } else {
+      return `${phoneNumber.slice(0, 3)}-${phoneNumber.slice(3, 7)}-${phoneNumber.slice(7, 11)}`
+    }
+  }
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    const formattedValue = name === 'contact' ? formatPhoneNumber(value) : value
+    
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: formattedValue
     })
   }
 
