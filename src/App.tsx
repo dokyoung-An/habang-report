@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { useEffect } from 'react'
 import LoginPage from './pages/LoginPage'
 import HomePage from './pages/HomePage'
 import BasicInfoPage from './pages/BasicInfoPage'
@@ -9,8 +10,13 @@ import FinalReportPage from './pages/FinalReportPage'
 import ManageReportsPage from './pages/ManageReportsPage'
 import CustomerReportPage from './pages/CustomerReportPage'
 import AdminUsersPage from './pages/AdminUsersPage'
+import { startAutoCleanup } from './utils/cleanupOldData'
 
 function App() {
+  useEffect(() => {
+    // 앱 시작 시 자동 정리 작업 시작
+    startAutoCleanup()
+  }, [])
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">

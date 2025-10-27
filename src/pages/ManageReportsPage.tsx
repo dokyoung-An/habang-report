@@ -257,10 +257,7 @@ export default function ManageReportsPage() {
     }
   }
 
-  const handleAddToBoard = (reportId: string) => {
-    setSelectedReportForBoard(reportId)
-    setShowBoardModal(true)
-  }
+
 
   const handleSubmitToBoard = async () => {
     if (!selectedReportForBoard || !boardTitle.trim()) {

@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { jsPDF } from 'jspdf'
-import html2canvas from 'html2canvas'
 import JSZip from 'jszip'
 
 interface ReportData {
@@ -18,7 +16,6 @@ export default function CustomerReportPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [isWithin7Days, setIsWithin7Days] = useState(true)
-  const [daysLeft, setDaysLeft] = useState(0)
   const reportRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -78,8 +75,6 @@ export default function CustomerReportPage() {
     
     if (diffDays > 7) {
       setIsWithin7Days(false)
-    } else {
-      setDaysLeft(7 - diffDays)
     }
   }
 
@@ -144,15 +139,6 @@ export default function CustomerReportPage() {
       }
       img.src = imageUrl
     })
-  }
-
-  const downloadFile = (dataUrl: string, filename: string) => {
-    const link = document.createElement('a')
-    link.href = dataUrl
-    link.download = filename
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
   }
 
   const downloadPDF = () => {
@@ -265,7 +251,7 @@ export default function CustomerReportPage() {
                               </tr>
                             </thead>
                             <tbody>
-                              {groupedEquipment['라돈'].map((item, index) => (
+                              {groupedEquipment['라돈'].map((item: any, index: number) => (
                                 <tr key={index} className="hover:bg-gray-50">
                                   <td className="border border-gray-300 px-4 py-3 font-medium text-center">
                                     {item.item_name.split('_')[1]}
@@ -336,7 +322,7 @@ export default function CustomerReportPage() {
                               </tr>
                             </thead>
                             <tbody>
-                              {groupedEquipment['포름알데히드'].map((item, index) => (
+                              {groupedEquipment['포름알데히드'].map((item: any, index: number) => (
                                 <tr key={index} className="hover:bg-gray-50">
                                   <td className="border border-gray-300 px-4 py-3 font-medium text-center">
                                     {item.item_name.split('_')[1]}
@@ -395,7 +381,7 @@ export default function CustomerReportPage() {
                               </tr>
                             </thead>
                             <tbody>
-                              {groupedEquipment['열화상카메라'].map((item, index) => {
+                              {groupedEquipment['열화상카메라'].map((item: any, index: number) => {
                                 const details = item.input_text || ''
                                 const mold = details.includes('곰팡이:true')
                                 const condensation = details.includes('결로:true')
@@ -481,7 +467,7 @@ export default function CustomerReportPage() {
                               </tr>
                             </thead>
                             <tbody>
-                              {groupedEquipment['배관'].map((item, index) => {
+                              {groupedEquipment['배관'].map((item: any, index: number) => {
                                 const details = item.input_text || ''
                                 const damage = details.includes('파손:true')
                                 const wasteMaterial = details.includes('폐자재:true')
@@ -570,7 +556,7 @@ export default function CustomerReportPage() {
                               </tr>
                             </thead>
                             <tbody>
-                              {groupedEquipment['바닥수평'].map((item, index) => {
+                              {groupedEquipment['바닥수평'].map((item: any, index: number) => {
                                 const details = item.input_text || ''
                                 const leftHeight = details.match(/좌측:(\d+)mm/)?.[1] || ''
                                 const rightHeight = details.match(/우측:(\d+)mm/)?.[1] || ''
@@ -640,7 +626,7 @@ export default function CustomerReportPage() {
                               </tr>
                             </thead>
                             <tbody>
-                              {groupedEquipment['배수역물매'].map((item, index) => {
+                              {groupedEquipment['배수역물매'].map((item: any, index: number) => {
                                 const details = item.input_text || ''
                                 const defectDetails = details.match(/하자내용:([^,]+)/)?.[1] || ''
                                 const remarks = details.match(/비고:([^,]+)/)?.[1] || ''

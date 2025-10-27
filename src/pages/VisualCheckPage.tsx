@@ -343,7 +343,7 @@ export default function VisualCheckPage() {
             console.log('File name:', fileName)
             console.log('File size:', compressedFile.size)
             
-            const { data: uploadData, error: uploadError } = await supabase.storage
+            const { error: uploadError } = await supabase.storage
               .from('inspection-images')
               .upload(fileName, compressedFile)
 
