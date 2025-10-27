@@ -272,6 +272,113 @@ export default function VisualCheckPage() {
   }
 
 
+  // 임시저장 기능
+  const handleSaveDraft = async () => {
+    setLoading(true)
+    const reportId = localStorage.getItem('current_report_id')
+    if (!reportId) {
+      alert('보고서 ID를 찾을 수 없습니다.')
+      setLoading(false)
+      return
+    }
+
+    try {
+      // 기존 데이터 삭제
+      const { data: existingData } = await supabase
+        .from('reports_visual')
+        .select('image_path')
+        .eq('report_id', reportId)
+
+      if (existingData) {
+        for (const item of existingData) {
+          await supabase.storage
+            .from('inspection-images')
+            .remove([item.image_path])
+        }
+      }
+
+      await supabase
+        .from('reports_visual')
+        .delete()
+        .eq('report_id', reportId)
+
+      // 완전한 항목만 저장
+      const validFormItems = formItems.filter(form => 
+        form.location && 
+        form.classification && 
+        form.details.trim() && 
+        form.fullImage && 
+        form.closeupImage
+      )
+
+      // 유효한 항목이 없으면 경고
+      if (validFormItems.length === 0) {
+        alert('임시저장할 완전한 하자 정보가 없습니다.')
+        setLoading(false)
+        return
+      }
+
+      // 데이터 저장
+      for (let index = 0; index < validFormItems.length; index++) {
+        const form = validFormItems[index]
+
+        const images = [
+          { file: form.fullImage, type: 'full' },
+          { file: form.closeupImage, type: 'closeup' }
+        ].filter(item => item.file !== null) as { file: File | string, type: string }[]
+        
+        for (const { file: image, type } of images) {
+          let fileName = ''
+          let imageUrl = ''
+          
+          if (image instanceof File) {
+            const compressedBlob = await compressImage(image)
+            const compressedFile = new File([compressedBlob], image.name, { type: 'image/jpeg' })
+            
+            fileName = `${reportId}/${Date.now()}_${index}_${type}_${image.name}`
+            
+            const { error: uploadError } = await supabase.storage
+              .from('inspection-images')
+              .upload(fileName, compressedFile)
+
+            if (uploadError) throw uploadError
+
+            const { data: urlData } = supabase.storage
+              .from('inspection-images')
+              .getPublicUrl(fileName)
+            
+            imageUrl = urlData.publicUrl
+          } else {
+            imageUrl = image
+            fileName = image
+          }
+
+          await supabase
+            .from('reports_visual')
+            .insert({
+              report_id: reportId,
+              space_item: form.space_item,
+              title: form.title,
+              content: form.content,
+              image_path: fileName,
+              image_url: imageUrl,
+              image_type: type,
+              location: form.location,
+              classification: form.classification,
+              details: form.details
+            })
+        }
+      }
+
+      alert('임시저장이 완료되었습니다.')
+    } catch (error) {
+      console.error('Error saving draft:', error)
+      alert('임시저장에 실패했습니다.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -617,7 +724,7 @@ export default function VisualCheckPage() {
             </div>
 
             {/* 버튼 */}
-            <div className="flex justify-end gap-4">
+            <div className="flex justify-between gap-4">
               <button
                 type="button"
                 onClick={() => navigate('/select-report-type')}
@@ -625,13 +732,24 @@ export default function VisualCheckPage() {
               >
                 이전
               </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg transition-colors duration-200"
-              >
-                {loading ? '저장 중...' : '완료'}
-              </button>
+              
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={handleSaveDraft}
+                  disabled={loading}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors duration-200"
+                >
+                  {loading ? '저장 중...' : '임시저장'}
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg transition-colors duration-200"
+                >
+                  {loading ? '저장 중...' : '완료'}
+                </button>
+              </div>
             </div>
           </form>
         </div>
