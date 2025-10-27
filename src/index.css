@@ -38,7 +38,7 @@ body {
     margin: 0;
     padding: 0;
     -webkit-print-color-adjust: exact;
-    color-adjust: exact;
+          print-color-adjust: exact;
   }
   
   /* 인쇄 시 배경색 유지 */
