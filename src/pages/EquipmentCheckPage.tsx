@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import Pica from 'pica'
 
 interface RadonItem {
   location: string
   normal: boolean
   exceeds_standard: boolean
   value: string
+  image: File | string | null
 }
 
 interface FormaldehydeItem {
@@ -19,10 +21,9 @@ interface FormaldehydeItem {
 interface ThermalCameraItem {
   location: string
   normal: boolean
-  mold: boolean
-  condensation: boolean
-  missing_insulation: boolean
-  leakage: boolean
+  defect: boolean
+  image1: File | string | null
+  image2: File | string | null
 }
 
 interface PipingItem {
@@ -54,12 +55,13 @@ interface DrainageItem {
 export default function EquipmentCheckPage() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const pica = new Pica()
   
   // 라돈 점검 데이터
   const [radonItems, setRadonItems] = useState<RadonItem[]>([
-    { location: '주방/거실', normal: true, exceeds_standard: false, value: '' },
-    { location: '욕실1', normal: true, exceeds_standard: false, value: '' },
-    { location: '침실1', normal: true, exceeds_standard: false, value: '' }
+    { location: '주방/거실', normal: true, exceeds_standard: false, value: '', image: null },
+    { location: '욕실1', normal: true, exceeds_standard: false, value: '', image: null },
+    { location: '침실1', normal: true, exceeds_standard: false, value: '', image: null }
   ])
 
   // 포름알데히드 데이터
@@ -71,13 +73,12 @@ export default function EquipmentCheckPage() {
 
   // 열화상카메라 점검 데이터
   const [thermalItems, setThermalItems] = useState<ThermalCameraItem[]>([
-    { location: '주방', normal: true, mold: false, condensation: false, missing_insulation: false, leakage: false },
-    { location: '거실', normal: true, mold: false, condensation: false, missing_insulation: false, leakage: false },
-    { location: '침실1', normal: true, mold: false, condensation: false, missing_insulation: false, leakage: false },
-    { location: '침실2', normal: true, mold: false, condensation: false, missing_insulation: false, leakage: false },
-    { location: '침실3', normal: true, mold: false, condensation: false, missing_insulation: false, leakage: false },
-    { location: '알파룸', normal: true, mold: false, condensation: false, missing_insulation: false, leakage: false },
-    { location: '드레스룸', normal: true, mold: false, condensation: false, missing_insulation: false, leakage: false }
+  
+    { location: '거실', normal: true, defect: false, image1: null, image2: null },
+    { location: '침실1', normal: true, defect: false, image1: null, image2: null },
+    { location: '침실2', normal: true, defect: false, image1: null, image2: null },
+    { location: '침실3', normal: true, defect: false, image1: null, image2: null },
+  
   ])
 
   // 배관 육안 점검 데이터
@@ -106,7 +107,7 @@ export default function EquipmentCheckPage() {
   ])
 
   // 라돈 점검 핸들러
-  const handleRadonChange = (index: number, field: 'normal' | 'exceeds_standard' | 'value', value: boolean | string) => {
+  const handleRadonChange = (index: number, field: 'location' | 'normal' | 'exceeds_standard' | 'value' | 'image', value: boolean | string | File | null) => {
     const newItems = [...radonItems]
     if (field === 'normal' && value === true) {
       newItems[index].exceeds_standard = false
@@ -118,7 +119,7 @@ export default function EquipmentCheckPage() {
   }
 
   // 포름알데히드 핸들러
-  const handleFormaldehydeChange = (index: number, field: 'normal' | 'exceeds_standard' | 'value', value: boolean | string) => {
+  const handleFormaldehydeChange = (index: number, field: 'location' | 'normal' | 'exceeds_standard' | 'value', value: boolean | string) => {
     const newItems = [...formaldehydeItems]
     if (field === 'normal' && value === true) {
       newItems[index].exceeds_standard = false
@@ -130,29 +131,27 @@ export default function EquipmentCheckPage() {
   }
 
   // 열화상카메라 핸들러
-  const handleThermalChange = (index: number, field: string, value: boolean) => {
-    const newItems = [...thermalItems]
+  const handleThermalChange = (index: number, field: 'location' | 'normal' | 'defect' | 'image1' | 'image2', value: boolean | string | File | null) => {
+    const newItems: ThermalCameraItem[] = [...thermalItems]
     if (field === 'normal' && value === true) {
-      newItems[index].mold = false
-      newItems[index].condensation = false
-      newItems[index].missing_insulation = false
-      newItems[index].leakage = false
-    } else if (field !== 'normal' && value === true) {
-      newItems[index].normal = false
+      newItems[index] = { ...newItems[index], normal: true, defect: false }
+    } else if (field === 'defect' && value === true) {
+      newItems[index] = { ...newItems[index], normal: false, defect: true }
+    } else {
+      newItems[index] = { ...newItems[index], [field]: value }
     }
-    (newItems[index] as any)[field] = value
     setThermalItems(newItems)
   }
 
   // 배관 육안 점검 핸들러
-  const handlePipingChange = (index: number, field: string, value: boolean) => {
+  const handlePipingChange = (index: number, field: string, value: boolean | string) => {
     const newItems = [...pipingItems]
     if (field === 'normal' && value === true) {
       newItems[index].damage = false
       newItems[index].waste_material = false
       newItems[index].pipe_clog = false
       newItems[index].other = false
-    } else if (field !== 'normal' && value === true) {
+    } else if (field !== 'normal' && field !== 'location' && value === true) {
       newItems[index].normal = false
     }
     (newItems[index] as any)[field] = value
@@ -191,6 +190,103 @@ export default function EquipmentCheckPage() {
     setDrainageItems(newItems)
   }
 
+  // 행 추가/삭제 함수들
+  const addRadonItem = () => {
+    setRadonItems([...radonItems, { location: '', normal: true, exceeds_standard: false, value: '', image: null }])
+  }
+
+  const removeRadonItem = (index: number) => {
+    if (radonItems.length > 1) {
+      setRadonItems(radonItems.filter((_, i) => i !== index))
+    }
+  }
+
+  const addFormaldehydeItem = () => {
+    setFormaldehydeItems([...formaldehydeItems, { location: '', normal: true, exceeds_standard: false, value: '' }])
+  }
+
+  const removeFormaldehydeItem = (index: number) => {
+    if (formaldehydeItems.length > 1) {
+      setFormaldehydeItems(formaldehydeItems.filter((_, i) => i !== index))
+    }
+  }
+
+  const addThermalItem = () => {
+    setThermalItems([...thermalItems, { location: '', normal: true, defect: false, image1: null, image2: null }])
+  }
+
+  const removeThermalItem = (index: number) => {
+    if (thermalItems.length > 1) {
+      setThermalItems(thermalItems.filter((_, i) => i !== index))
+    }
+  }
+
+  const addPipingItem = () => {
+    setPipingItems([...pipingItems, { location: '', normal: true, damage: false, waste_material: false, pipe_clog: false, other: false }])
+  }
+
+  const removePipingItem = (index: number) => {
+    if (pipingItems.length > 1) {
+      setPipingItems(pipingItems.filter((_, i) => i !== index))
+    }
+  }
+
+  const addFloorLevelingItem = () => {
+    setFloorLevelingItems([...floorLevelingItems, { location: '', normal: true, defect: false, left_height: '', right_height: '', difference: '' }])
+  }
+
+  const removeFloorLevelingItem = (index: number) => {
+    if (floorLevelingItems.length > 1) {
+      setFloorLevelingItems(floorLevelingItems.filter((_, i) => i !== index))
+    }
+  }
+
+  const addDrainageItem = () => {
+    setDrainageItems([...drainageItems, { location: '', normal: true, defect: false, defect_details: '', remarks: '' }])
+  }
+
+  const removeDrainageItem = (index: number) => {
+    if (drainageItems.length > 1) {
+      setDrainageItems(drainageItems.filter((_, i) => i !== index))
+    }
+  }
+
+  // 이미지 압축 함수
+  const compressImage = async (file: File): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.src = URL.createObjectURL(file)
+      
+      img.onload = async () => {
+        const canvas = document.createElement('canvas')
+        const maxWidth = 1920
+        const maxHeight = 1080
+        
+        let width = img.width
+        let height = img.height
+        
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height)
+          width = width * ratio
+          height = height * ratio
+        }
+        
+        canvas.width = width
+        canvas.height = height
+        
+        try {
+          const result = await pica.resize(img, canvas)
+          const blob = await pica.toBlob(result, 'image/jpeg', 0.85)
+          resolve(blob)
+        } catch (error) {
+          reject(error)
+        }
+      }
+      
+      img.onerror = reject
+    })
+  }
+
   // 기존 데이터 로드
   useEffect(() => {
     loadExistingData()
@@ -217,7 +313,8 @@ export default function EquipmentCheckPage() {
             location: item.item_name.split('_')[1],
             normal: item.is_checked,
             exceeds_standard: !item.is_checked && !!item.input_text,
-            value: item.input_text?.replace(' Pci/L', '') || ''
+            value: item.input_text?.replace(' Pci/L', '') || '',
+            image: (item as any).image_url || null
           }))
         if (radonData.length > 0) setRadonItems(radonData)
 
@@ -237,13 +334,16 @@ export default function EquipmentCheckPage() {
           .filter(item => item.item_name.startsWith('열화상카메라_'))
           .map(item => {
             const details = item.input_text || ''
+            // 이미지 URL 파싱
+            const image1Match = details.match(/image1:(https?:\/\/[^\s,]+)/)
+            const image2Match = details.match(/image2:(https?:\/\/[^\s,]+)/)
+            
             return {
               location: item.item_name.split('_')[1],
               normal: item.is_checked,
-              mold: details.includes('곰팡이:true'),
-              condensation: details.includes('결로:true'),
-              missing_insulation: details.includes('단열재누락:true'),
-              leakage: details.includes('누수:true')
+              defect: !item.is_checked,
+              image1: image1Match ? image1Match[1] : null,
+              image2: image2Match ? image2Match[1] : null
             }
           })
         if (thermalData.length > 0) setThermalItems(thermalData)
@@ -324,14 +424,52 @@ export default function EquipmentCheckPage() {
         .eq('report_id', reportId)
 
       // 모든 데이터를 하나의 배열로 합치기
+      // 라돈 이미지 업로드
+      const radonDataWithImages = await Promise.all(
+        radonItems.map(async (item, index) => {
+          let imageUrl = ''
+          let imagePath = ''
+          
+          if (item.image) {
+            if (item.image instanceof File) {
+              // 새 이미지 업로드
+              const compressedBlob = await compressImage(item.image)
+              const compressedFile = new File([compressedBlob], item.image.name, { type: 'image/jpeg' })
+              
+              imagePath = `${reportId}/radon_${Date.now()}_${index}_${item.image.name}`
+              
+              const { error: uploadError } = await supabase.storage
+                .from('inspection-images')
+                .upload(imagePath, compressedFile)
+              
+              if (uploadError) throw uploadError
+              
+              const { data: urlData } = supabase.storage
+                .from('inspection-images')
+                .getPublicUrl(imagePath)
+              
+              imageUrl = urlData.publicUrl
+            } else {
+              // 기존 이미지 URL 사용
+              imageUrl = item.image
+              imagePath = item.image
+            }
+          }
+          
+          return {
+            report_id: reportId,
+            item_name: `라돈_${item.location}`,
+            is_checked: item.normal,
+            input_text: `${item.value} Pci/L`,
+            image_url: imageUrl,
+            image_path: imagePath
+          }
+        })
+      )
+
       const allEquipmentData = [
         // 라돈 점검 데이터
-        ...radonItems.map(item => ({
-          report_id: reportId,
-          item_name: `라돈_${item.location}`,
-          is_checked: item.normal,
-          input_text: `${item.value} Pci/L`
-        })),
+        ...radonDataWithImages,
         // 포름알데히드 데이터
         ...formaldehydeItems.map(item => ({
           report_id: reportId,
@@ -339,13 +477,70 @@ export default function EquipmentCheckPage() {
           is_checked: item.normal,
           input_text: `${item.value} ppm`
         })),
-        // 열화상카메라 데이터
-        ...thermalItems.map(item => ({
-          report_id: reportId,
-          item_name: `열화상카메라_${item.location}`,
-          is_checked: item.normal,
-          input_text: `곰팡이:${item.mold}, 결로:${item.condensation}, 단열재누락:${item.missing_insulation}, 누수:${item.leakage}`
-        })),
+        // 열화상카메라 이미지 업로드
+        ...(await Promise.all(
+          thermalItems.map(async (item, index) => {
+            const images = []
+            
+            // 이미지1 업로드
+            if (item.image1) {
+              if (item.image1 instanceof File) {
+                const compressedBlob = await compressImage(item.image1)
+                const compressedFile = new File([compressedBlob], item.image1.name, { type: 'image/jpeg' })
+                const imagePath1 = `${reportId}/thermal_${Date.now()}_${index}_1_${item.image1.name}`
+                
+                const { error: uploadError1 } = await supabase.storage
+                  .from('inspection-images')
+                  .upload(imagePath1, compressedFile)
+                
+                if (uploadError1) throw uploadError1
+                
+                const { data: urlData1 } = supabase.storage
+                  .from('inspection-images')
+                  .getPublicUrl(imagePath1)
+                
+                images.push({ url: urlData1.publicUrl, path: imagePath1, type: 'image1' })
+              } else {
+                images.push({ url: item.image1, path: item.image1, type: 'image1' })
+              }
+            }
+            
+            // 이미지2 업로드
+            if (item.image2) {
+              if (item.image2 instanceof File) {
+                const compressedBlob = await compressImage(item.image2)
+                const compressedFile = new File([compressedBlob], item.image2.name, { type: 'image/jpeg' })
+                const imagePath2 = `${reportId}/thermal_${Date.now()}_${index}_2_${item.image2.name}`
+                
+                const { error: uploadError2 } = await supabase.storage
+                  .from('inspection-images')
+                  .upload(imagePath2, compressedFile)
+                
+                if (uploadError2) throw uploadError2
+                
+                const { data: urlData2 } = supabase.storage
+                  .from('inspection-images')
+                  .getPublicUrl(imagePath2)
+                
+                images.push({ url: urlData2.publicUrl, path: imagePath2, type: 'image2' })
+              } else {
+                images.push({ url: item.image2, path: item.image2, type: 'image2' })
+              }
+            }
+            
+            // 이미지 URL을 input_text에 포함
+            const imageUrls = images.map(img => `${img.type}:${img.url}`).join(', ')
+            
+            return {
+              report_id: reportId,
+              item_name: `열화상카메라_${item.location}`,
+              is_checked: item.normal,
+              input_text: imageUrls || '',
+              image_url: images[0]?.url || '',
+              image_path: images[0]?.path || ''
+            }
+          })
+        )),
         // 배관 육안 점검 데이터
         ...pipingItems.map(item => ({
           report_id: reportId,
@@ -403,13 +598,30 @@ export default function EquipmentCheckPage() {
                       <th className="border border-gray-300 px-4 py-3 text-center">항목</th>
                       <th className="border border-gray-300 px-4 py-3 text-center">정상</th>
                       <th className="border border-gray-300 px-4 py-3 text-center">기준치 초과</th>
-                      <th className="border border-gray-300 px-4 py-3 text-center">Pci/L</th>
+                      <th className="border border-gray-300 px-4 py-3 text-center">사진</th>
                     </tr>
                   </thead>
                   <tbody>
                     {radonItems.map((item, index) => (
                       <tr key={index} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 px-4 py-3 font-medium text-center">{item.location}</td>
+                        <td className="border border-gray-300 px-4 py-3 text-center">
+                          <input
+                            type="text"
+                            value={item.location}
+                            onChange={(e) => handleRadonChange(index, 'location', e.target.value)}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-center"
+                            placeholder="항목 입력"
+                          />
+                          {radonItems.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeRadonItem(index)}
+                              className="mt-1 text-red-500 hover:text-red-700 text-sm"
+                            >
+                              삭제
+                            </button>
+                          )}
+                        </td>
                         <td className="border border-gray-300 px-4 py-3 text-center">
                           <input
                             type="checkbox"
@@ -427,17 +639,56 @@ export default function EquipmentCheckPage() {
                           />
                         </td>
                         <td className="border border-gray-300 px-4 py-3 text-center">
-                          <input
-                            type="text"
-                            value={item.value}
-                            onChange={(e) => handleRadonChange(index, 'value', e.target.value)}
-                            className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
-                          /> <span className="text-sm text-gray-500 ml-2">Pci/L</span>
+                          <div className="space-y-2">
+                            {item.image ? (
+                              <div className="relative">
+                                <img
+                                  src={item.image instanceof File ? URL.createObjectURL(item.image) : item.image}
+                                  alt="라돈 측정 결과"
+                                  className="w-32 h-32 object-cover rounded-lg mx-auto border border-gray-300"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleRadonChange(index, 'image', null)}
+                                  className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 text-xs"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ) : (
+                              <label className="cursor-pointer">
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+                                  <div className="text-2xl text-gray-400 mb-1">📷</div>
+                                  <span className="text-xs text-gray-500">사진 업로드</span>
+                                </div>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0]
+                                    if (file) {
+                                      handleRadonChange(index, 'image', file)
+                                    }
+                                  }}
+                                  className="hidden"
+                                />
+                              </label>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={addRadonItem}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+                  >
+                    + 항목 추가
+                  </button>
+                </div>
               </div>
               <div className="mt-4 text-sm text-gray-600 space-y-2">
                 <div>
@@ -475,7 +726,24 @@ export default function EquipmentCheckPage() {
                   <tbody>
                     {formaldehydeItems.map((item, index) => (
                       <tr key={index} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 px-4 py-3 font-medium text-center">{item.location}</td>
+                        <td className="border border-gray-300 px-4 py-3 text-center">
+                          <input
+                            type="text"
+                            value={item.location}
+                            onChange={(e) => handleFormaldehydeChange(index, 'location', e.target.value)}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-center"
+                            placeholder="항목 입력"
+                          />
+                          {formaldehydeItems.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeFormaldehydeItem(index)}
+                              className="mt-1 text-red-500 hover:text-red-700 text-sm"
+                            >
+                              삭제
+                            </button>
+                          )}
+                        </td>
                         <td className="border border-gray-300 px-4 py-3 text-center">
                           <input
                             type="checkbox"
@@ -504,6 +772,15 @@ export default function EquipmentCheckPage() {
                     ))}
                   </tbody>
                 </table>
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={addFormaldehydeItem}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+                  >
+                    + 항목 추가
+                  </button>
+                </div>
               </div>
               <div className="mt-4 text-sm text-gray-600 space-y-2">
                 <p><strong>※ HCHO(포름알데히드) 기준치:</strong></p>
@@ -517,6 +794,7 @@ export default function EquipmentCheckPage() {
             {/* 3. 열화상카메라 점검 */}
             <section>
               <h2 className="text-xl font-bold text-gray-800 mb-4">3. 열화상카메라 점검</h2>
+              <p className="text-sm text-gray-600 mb-2">* 창문을 기준으로 좌/우측 측정. 10도 이상 차이 발생시 하자로 판정</p>
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse border border-gray-300">
                   <thead>
@@ -524,12 +802,30 @@ export default function EquipmentCheckPage() {
                       <th className="border border-gray-300 px-4 py-3 text-medium">항목</th>
                       <th className="border border-gray-300 px-4 py-3 text-center">정상</th>
                       <th className="border border-gray-300 px-4 py-3 text-center">하자</th>
+                      <th className="border border-gray-300 px-4 py-3 text-center">사진</th>
                     </tr>
                   </thead>
                   <tbody>
                     {thermalItems.map((item, index) => (
                       <tr key={index} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 px-4 py-3 font-medium text-center">{item.location}</td>
+                        <td className="border border-gray-300 px-4 py-3 text-center">
+                          <input
+                            type="text"
+                            value={item.location}
+                            onChange={(e) => handleThermalChange(index, 'location', e.target.value)}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-center"
+                            placeholder="항목 입력"
+                          />
+                          {thermalItems.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeThermalItem(index)}
+                              className="mt-1 text-red-500 hover:text-red-700 text-sm"
+                            >
+                              삭제
+                            </button>
+                          )}
+                        </td>
                         <td className="border border-gray-300 px-4 py-3 text-center">
                           <input
                             type="checkbox"
@@ -538,50 +834,105 @@ export default function EquipmentCheckPage() {
                             className="w-5 h-5"
                           />
                         </td>
+                        <td className="border border-gray-300 px-4 py-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={item.defect}
+                            onChange={(e) => handleThermalChange(index, 'defect', e.target.checked)}
+                            className="w-5 h-5"
+                          />
+                        </td>
                         <td className="border border-gray-300 px-4 py-3">
-                          <div className="flex justify-evenly space-x-1">
-                            <label className="flex items-center">
-                              <input
-                                type="checkbox"
-                                checked={item.mold}
-                                onChange={(e) => handleThermalChange(index, 'mold', e.target.checked)}
-                                className="w-4 h-4 mr-1"
-                              />
-                              곰팡이
-                            </label>
-                            <label className="flex items-center">
-                              <input
-                                type="checkbox"
-                                checked={item.condensation}
-                                onChange={(e) => handleThermalChange(index, 'condensation', e.target.checked)}
-                                className="w-4 h-4 mr-1"
-                              />
-                              결로
-                            </label>
-                            <label className="flex items-center">
-                              <input
-                                type="checkbox"
-                                checked={item.missing_insulation}
-                                onChange={(e) => handleThermalChange(index, 'missing_insulation', e.target.checked)}
-                                className="w-4 h-4 mr-1"
-                              />
-                              단열재 누락
-                            </label>
-                            <label className="flex items-center">
-                              <input
-                                type="checkbox"
-                                checked={item.leakage}
-                                onChange={(e) => handleThermalChange(index, 'leakage', e.target.checked)}
-                                className="w-4 h-4 mr-1"
-                              />
-                              누수
-                            </label>
-                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                              {/* 사진 1 */}
+                              <div>
+                                {item.image1 ? (
+                                  <div className="relative">
+                                    <img
+                                      src={item.image1 instanceof File ? URL.createObjectURL(item.image1) : item.image1}
+                                      alt="열화상 사진 1"
+                                      className="w-full h-24 object-cover rounded-lg border border-gray-300"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleThermalChange(index, 'image1', null)}
+                                      className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 text-xs"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <label className="cursor-pointer block">
+                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-2 text-center hover:border-gray-400 transition-colors">
+                                      <div className="text-xl text-gray-400 mb-1">📷</div>
+                                      <span className="text-xs text-gray-500">사진 1</span>
+                                    </div>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0]
+                                        if (file) {
+                                          handleThermalChange(index, 'image1', file)
+                                        }
+                                      }}
+                                      className="hidden"
+                                    />
+                                  </label>
+                                )}
+                              </div>
+                              {/* 사진 2 */}
+                              <div>
+                                {item.image2 ? (
+                                  <div className="relative">
+                                    <img
+                                      src={item.image2 instanceof File ? URL.createObjectURL(item.image2) : item.image2}
+                                      alt="열화상 사진 2"
+                                      className="w-full h-24 object-cover rounded-lg border border-gray-300"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleThermalChange(index, 'image2', null)}
+                                      className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 text-xs"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <label className="cursor-pointer block">
+                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-2 text-center hover:border-gray-400 transition-colors">
+                                      <div className="text-xl text-gray-400 mb-1">📷</div>
+                                      <span className="text-xs text-gray-500">사진 2</span>
+                                    </div>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0]
+                                        if (file) {
+                                          handleThermalChange(index, 'image2', file)
+                                        }
+                                      }}
+                                      className="hidden"
+                                    />
+                                  </label>
+                                )}
+                              </div>
+                            </div>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={addThermalItem}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+                  >
+                    + 항목 추가
+                  </button>
+                </div>
               </div>
             </section>
 
@@ -600,7 +951,24 @@ export default function EquipmentCheckPage() {
                   <tbody>
                     {pipingItems.map((item, index) => (
                       <tr key={index} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 px-4 py-3 font-medium text-center">{item.location}</td>
+                        <td className="border border-gray-300 px-4 py-3 text-center">
+                          <input
+                            type="text"
+                            value={item.location}
+                            onChange={(e) => handlePipingChange(index, 'location', e.target.value)}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-center"
+                            placeholder="항목 입력"
+                          />
+                          {pipingItems.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removePipingItem(index)}
+                              className="mt-1 text-red-500 hover:text-red-700 text-sm"
+                            >
+                              삭제
+                            </button>
+                          )}
+                        </td>
                         <td className="border border-gray-300 px-4 py-3 text-center">
                           <input
                             type="checkbox"
@@ -653,6 +1021,15 @@ export default function EquipmentCheckPage() {
                     ))}
                   </tbody>
                 </table>
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={addPipingItem}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+                  >
+                    + 항목 추가
+                  </button>
+                </div>
               </div>
             </section>
 
@@ -674,7 +1051,24 @@ export default function EquipmentCheckPage() {
                   <tbody>
                     {floorLevelingItems.map((item, index) => (
                       <tr key={index} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 px-4 py-3 font-medium text-center">{item.location}</td>
+                        <td className="border border-gray-300 px-4 py-3 text-center">
+                          <input
+                            type="text"
+                            value={item.location}
+                            onChange={(e) => handleFloorLevelingChange(index, 'location', e.target.value)}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-center"
+                            placeholder="항목 입력"
+                          />
+                          {floorLevelingItems.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeFloorLevelingItem(index)}
+                              className="mt-1 text-red-500 hover:text-red-700 text-sm"
+                            >
+                              삭제
+                            </button>
+                          )}
+                        </td>
                         <td className="border border-gray-300 px-4 py-3 text-center">
                           <input
                             type="checkbox"
@@ -716,6 +1110,15 @@ export default function EquipmentCheckPage() {
                     ))}
                   </tbody>
                 </table>
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={addFloorLevelingItem}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+                  >
+                    + 항목 추가
+                  </button>
+                </div>
               </div>
               <div className="mt-4 text-sm text-gray-600">
                 <p><strong>※ 바닥 단차 기준치</strong></p>
@@ -740,7 +1143,24 @@ export default function EquipmentCheckPage() {
                   <tbody>
                     {drainageItems.map((item, index) => (
                       <tr key={index} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 px-4 py-3 font-medium">{item.location}</td>
+                        <td className="border border-gray-300 px-4 py-3">
+                          <input
+                            type="text"
+                            value={item.location}
+                            onChange={(e) => handleDrainageChange(index, 'location', e.target.value)}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-center"
+                            placeholder="항목 입력"
+                          />
+                          {drainageItems.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeDrainageItem(index)}
+                              className="mt-1 text-red-500 hover:text-red-700 text-sm block mx-auto"
+                            >
+                              삭제
+                            </button>
+                          )}
+                        </td>
                         <td className="border border-gray-300 px-4 py-3 text-center">
                           <input
                             type="checkbox"
@@ -779,6 +1199,15 @@ export default function EquipmentCheckPage() {
                     ))}
                   </tbody>
                 </table>
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={addDrainageItem}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+                  >
+                    + 항목 추가
+                  </button>
+                </div>
               </div>
             </section>
 

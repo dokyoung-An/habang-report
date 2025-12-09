@@ -15,84 +15,95 @@ interface VisualCheckFormItem {
   details: string
 }
 
+// 하자 위치 목록 (드롭다운에 표시될 옵션들)
+const predefinedLocations = [
+  '현관', '현관창고', '복도', '침실3', '침실2', '침실1', '파우더룸', '드레스룸', 
+  '침실1발코니', '대피공간', '거실', '주방', '다용도실', '팬트리', '침실4', 
+  '실외기실', '알파룸', '욕실1', '욕실2'
+]
+
 // 하자 위치별 분류 옵션
 const locationClassifications: Record<string, string[]> = {
   '거실': [
-    '마루/타일','걸레받이','난방배관','내장목공사','단열','스위치','도배(벽지)','유리','일반가구','줄눈','코킹','PVC창호',
-    '환기/공조','몰딩','난간대','세대등기구','스프링클러헤드','아트월','장식장','홈오토시스템',
+    '마루/타일','걸레받이','난방배관','석고보드','단열','스위치','도배','유리','일반가구','줄눈','코킹','PVC창호',
+    '환기/공조','몰딩','난간대','세대등기구','스프링클러','아트월','장식장','홈오토시스템','기타'
     
   ],
   '주방': [
-    '가스감지기(자동식소화기일체)', '내장목공사', '냉온수계량기', '냉장고',
-    '도배(벽지)', '렌지후드', '세대등기구', '스프링클러헤드', '마루/타일','줄눈','코킹',
-    '온수분배기', '인덕션쿡탑', '자동제어밸브', '장비기타(전기)',
-    '주방가구', '주방상판','단열','도배(벽지)','유리','일반가구','PVC창호'
+    '가스감지기(자동식소화기일체)', '석고보드', '냉온수계량기', '냉장고',
+    '도배', '렌지후드', '세대등기구', '스프링클러', '마루/타일','줄눈','코킹',
+    '온수분배기', '인덕션쿡탑', '자동제어밸브', '콘센트',
+    '주방가구', '주방상판','단열','도배','유리','일반가구','PVC창호','기타'
   ],
   '침실1': [
-    '내장목공사', '도배(벽지)', '목문', '스프링클러헤드', '바닥재','걸레받이',
-    '일반가구', '장비기타(전기)', 'PVC창호','몰딩','스위치','코킹','세대등기구','환기/공조 관련'
+    '석고보드', '도배', '목문', '스프링클러', '마루','걸레받이','도장','미장',
+    '일반가구', '콘센트', 'PVC창호','몰딩','스위치','코킹','세대등기구','환기/공조 관련','기타'
   ],
   '침실2': [
-    '내장목공사', '도배(벽지)', '목문', '스프링클러헤드', '바닥재','걸레받이',
-    '일반가구', '장비기타(전기)', 'PVC창호','몰딩','스위치','코킹','세대등기구','환기/공조 관련'
+    '석고보드', '도배', '목문', '스프링클러', '마루','걸레받이','도장','미장',
+    '일반가구', '콘센트', 'PVC창호','몰딩','스위치','코킹','세대등기구','환기/공조 관련','기타'
   ],
   '침실3': [
-    '내장목공사', '도배(벽지)', '목문', '스프링클러헤드', '바닥재','걸레받이',
-    '일반가구', '장비기타(전기)', 'PVC창호','몰딩','스위치','코킹','세대등기구','환기/공조 관련'
+    '석고보드', '도배', '목문', '스프링클러', '마루','걸레받이','도장','미장',
+    '일반가구', '콘센트', 'PVC창호','몰딩','스위치','코킹','세대등기구','환기/공조 관련','기타'
   ],
   '침실4': [
-    '내장목공사', '도배(벽지)', '목문', '스프링클러헤드', '바닥재','걸레받이',
-    '일반가구', '장비기타(전기)', 'PVC창호','몰딩','스위치','코킹','세대등기구','환기/공조 관련'
+    '석고보드', '도배', '목문', '스프링클러', '마루','걸레받이','도장','미장',
+    '일반가구', '콘센트', 'PVC창호','몰딩','스위치','코킹','세대등기구','환기/공조 관련','기타'
+  ],
+  '침실5': [
+    '석고보드', '도배', '목문', '스프링클러', '마루','걸레받이','도장','미장',
+    '일반가구', '콘센트', 'PVC창호','몰딩','스위치','코킹','세대등기구','환기/공조 관련','기타'
   ],
   '현관': [
-    '현관문', '신발장', '내장목공사', '도배(벽지)', '줄눈', '코킹', '도장', '디지털도어록',
-    '몰딩', '미장', '석재', '센서등', '일광소등', '타일', '중문', '스위치', '스프링클러헤드'
+    '현관문', '신발장', '석고보드', '도배', '줄눈', '코킹', '도장', '디지털도어록',
+    '몰딩', '미장', '석재', '센서등', '일광소등', '타일', '중문', '스위치', '스프링클러','기타'
   ],
   '현관창고': [
-    '타일', '선반', '내장목공사', '도배(벽지)', '몰딩', '미장', '줄눈','코킹','세대등기구','스위치','스프링클러헤드','통신단자함'
+    '타일', '선반','도장','미장', '석고보드', '도배', '몰딩', '미장', '줄눈','코킹','세대등기구','스위치','스프링클러','통신단자함','기타'
   ],
   '복도': [
-    '내장목공사', '도배(벽지)', '일반가구', '코킹', 'PVC창호','몰딩',
-    '마루/타일일','세대등기구','스위치','스프링클러헤드','줄눈'
+    '석고보드', '도배', '일반가구', '코킹','몰딩',
+    '마루','타일','일괄소등스위치','세대등기구','스위치','스프링클러','줄눈','기타'
   ],
   '파우더룸': [
-    '화장대', '거울', '내장목공사', '도배(벽지)', '거울','코킹','세대등기구','스위치'
+    '화장대', '거울', '석고보드', '도배','코킹','세대등기구','스위치','일반가구','석재','기타'
   ],
   '드레스룸': [
-    '거울', '내장목공사','단열','도배(벽지)', '환기/공조 관련', '무늬목판넬', '스위치',
-    '시스템가구', '온돌마루판', '일반가구', '전기민원', '도어', '세대등기구','스프링클러헤드'
+    '거울', '석고보드','단열','도배', '환기/공조 관련', '무늬목판넬', '스위치','목창호','PVC창호',
+    '시스템가구', '온돌마루판', '일반가구', '도어', '세대등기구','스프링클러','기타'
   ],
   '침실1발코니': [
-    '도장', '미장', '발코니난간대', '방수', '배수구(바닥드레인)', '분합창',
-    '빨래건조대', '선홈통', '설비민원', '세대등기구', '수전금구류', '유리',
-    '전기민원', '코킹', '콘크리트', '타일', 'PVC창호','줄눈'
+    '도장', '미장', '방수', '배수구(바닥드레인)', '분합창',
+    '빨래건조대', '선홈통','세대등기구', '수전금구류', '유리','콘센트',
+    '코킹', '타일', 'PVC창호','줄눈','기타'
   ],
   '대피공간': [
-    '타일', '단열', '도장', '미장', '방수', '세대등기구', '유리','피난사다리','줄눈',
-    'pvc창호',
+    '타일', '도장', '미장', '방수', '세대등기구','피난사다리','줄눈','방화문','완강기',
+    'pvc창호','기타'
   ],
   '다용도실': [
     '가스계량기', '가스배관', '경량칸막이', '도장', '동체감지기등', '목문틀','미장','방수','세대등기구',
-    '배수구(바닥드레인','보일러','선홈통','설비민원', '수전금구류','스위치','시스템가구','유리','주방가구','주방상판','코킹',
-    '콘센트','콘트리트','타일','터닝도어','통신단자함','PVC창호','줄눈'
+    '배수구(바닥드레인)','보일러','선홈통', '수전금구류','스위치','코킹',
+    '콘센트','타일','터닝도어','PVC창호','줄눈','기타'
   ],
   '팬트리': [
-    '도어', '선반', '도배(벽지)', '유리', '일반가구', '코킹','몰딩','바닥재','스위치','세대등기구','스프링클러헤드'
+    '도어', '도배', '유리', '일반가구', '코킹','몰딩','바닥재','스위치','세대등기구','스프링클러','목창호','기타'
   ],
   '실외기실': [
-    '도장', '미장', '방수', '유리', '코킹','타일','세대등기구','스위치','줄눈'
+    '도장', '미장', '방수', '코킹','타일','세대등기구','스위치','줄눈','루버창','방화문','선홈통','기타'
   ],
   '알파룸': [
-     '내장목공사', '도배(벽지)', '목문', '스프링클러헤드', '바닥재','걸레받이',
-    '일반가구', '장비기타(전기)', 'PVC창호','몰딩','스위치','코킹','세대등기구','환기/공조 관련'
+     '내장목공사', '도배', '목문', '스프링클러', '바닥재','걸레받이',
+    '일반가구', '장비기타(전기)', 'PVC창호','몰딩','스위치','코킹','세대등기구','환기/공조 관련','기타'
   ],
   '욕실1' :[
-    '목문','목문틀','미장','방수','배수구(바닥드레인)','세대등기구','세면기','수전금구류','스위치',
-    '양변기','욕실비누턱(젠다이)','욕실악세서리','욕실장','환풍기','욕조','코킹','타일','줄눈','코킹'
+    '목문','목문틀','미장','배수구(바닥드레인)','세대등기구','세면기','수전금구류','스위치','천장돔','천장돔내부배관','단열재',
+    '양변기','욕실비누턱(젠다이)','욕실악세서리','욕실장','환풍기','욕조','코킹','타일','줄눈','기타'
   ],
   '욕실2' :[
-    '목문','목문틀','미장','방수','배수구(바닥드레인)','세대등기구','세면기','수전금구류','스위치',
-    '양변기','욕실비누턱(젠다이)','욕실악세서리','욕실장','환풍기','욕조','코킹','타일','줄눈','코킹'
+    '목문','목문틀','미장','배수구(바닥드레인)','세대등기구','세면기','수전금구류','스위치','천장돔','천장돔내부배관','단열재',
+    '양변기','욕실비누턱(젠다이)','욕실악세서리','욕실장','환풍기','욕조','코킹','타일','줄눈','기타'
   ]
   
 }
@@ -246,6 +257,60 @@ export default function VisualCheckPage() {
     setFormItems(newFormItems)
   }
 
+  // 사진 추가 버튼 클릭 핸들러
+  const handleAddPhotos = () => {
+    const input = document.getElementById('bulk-photo-upload') as HTMLInputElement
+    input?.click()
+  }
+
+  // 여러 사진 선택 시 처리 (2개씩 묶어서 form item 추가)
+  const handlePhotosSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    const fileArray = Array.from(files)
+    const updatedFormItems = [...formItems]
+    let fileIndex = 0
+
+    // 첫 번째 form item이 비어있으면 먼저 채우기
+    if (updatedFormItems.length > 0 && 
+        !updatedFormItems[0].fullImage && 
+        !updatedFormItems[0].closeupImage && 
+        fileArray.length > 0) {
+      updatedFormItems[0] = {
+        ...updatedFormItems[0],
+        fullImage: fileArray[fileIndex] || null,
+        closeupImage: fileArray[fileIndex + 1] || null,
+        angleImage: null
+      }
+      fileIndex += 2
+    }
+
+    // 남은 사진들로 새로운 form item 생성 (2개씩 묶어서)
+    const newItems: VisualCheckFormItem[] = []
+    for (let i = fileIndex; i < fileArray.length; i += 2) {
+      newItems.push({
+        space_item: '',
+        title: '',
+        content: '',
+        fullImage: fileArray[i] || null,
+        closeupImage: fileArray[i + 1] || null,
+        angleImage: null,
+        location: '',
+        classification: '',
+        details: ''
+      })
+    }
+
+    // 업데이트된 form items와 새로운 항목들 합치기
+    setFormItems([...updatedFormItems, ...newItems])
+
+    // input 초기화 (같은 파일을 다시 선택할 수 있도록)
+    if (e.target) {
+      e.target.value = ''
+    }
+  }
+
   const compressImage = async (file: File): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const img = new Image()
@@ -312,18 +377,26 @@ export default function VisualCheckPage() {
         .delete()
         .eq('report_id', reportId)
 
-      // 완전한 항목만 저장
+      // 완전한 항목만 저장 (10자 이상 검증 포함)
       const validFormItems = formItems.filter(form => 
         form.location && 
         form.classification && 
         form.details.trim() && 
+        form.details.trim().length >= 10 &&
         form.fullImage && 
         form.closeupImage
       )
 
       // 유효한 항목이 없으면 경고
       if (validFormItems.length === 0) {
-        alert('임시저장할 완전한 하자 정보가 없습니다.')
+        const hasIncompleteDetails = formItems.some(form => 
+          form.details.trim() && form.details.trim().length < 10
+        )
+        if (hasIncompleteDetails) {
+          alert('임시저장할 완전한 하자 정보가 없습니다.\n세부 내용은 10자 이상 입력해야 합니다.')
+        } else {
+          alert('임시저장할 완전한 하자 정보가 없습니다.')
+        }
         setLoading(false)
         return
       }
@@ -421,18 +494,26 @@ export default function VisualCheckPage() {
         .delete()
         .eq('report_id', reportId)
 
-      // 빈 항목 자동 필터링 - 필수 항목이 모두 입력된 항목만 처리
+      // 빈 항목 자동 필터링 - 필수 항목이 모두 입력된 항목만 처리 (10자 이상 검증 포함)
       const validFormItems = formItems.filter(form => 
         form.location && 
         form.classification && 
         form.details.trim() && 
+        form.details.trim().length >= 10 &&
         form.fullImage && 
         form.closeupImage
       )
 
       // 유효한 항목이 없으면 경고
       if (validFormItems.length === 0) {
-        alert('최소 1개 이상의 완전한 하자 정보를 입력해주세요.\n(위치, 분류, 내용, 전체사진, 확대사진 모두 입력 필요)')
+        const hasIncompleteDetails = formItems.some(form => 
+          form.details.trim() && form.details.trim().length < 10
+        )
+        if (hasIncompleteDetails) {
+          alert('최소 1개 이상의 완전한 하자 정보를 입력해주세요.\n(위치, 분류, 내용 10자 이상, 전체사진, 확대사진 모두 입력 필요)')
+        } else {
+          alert('최소 1개 이상의 완전한 하자 정보를 입력해주세요.\n(위치, 분류, 내용, 전체사진, 확대사진 모두 입력 필요)')
+        }
         setLoading(false)
         return
       }
@@ -556,52 +637,84 @@ export default function VisualCheckPage() {
                         하자 위치 <span className="text-red-500">*</span>
                       </label>
                       <select
-                        value={form.location}
-                        onChange={(e) => updateFormItem(index, 'location', e.target.value)}
+                        value={form.location && !predefinedLocations.includes(form.location) ? '__CUSTOM__' : form.location}
+                        onChange={(e) => {
+                          if (e.target.value === '__CUSTOM__') {
+                            updateFormItem(index, 'location', '__CUSTOM__')
+                          } else {
+                            updateFormItem(index, 'location', e.target.value)
+                          }
+                        }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                       >
                         <option value="">선택</option>
-                        <option value="현관">현관</option>
-                        <option value="현관창고">현관창고</option>
-                        <option value="복도">복도</option>
-                        <option value="침실3">침실3</option>
-                        <option value="침실2">침실2</option>
-                        <option value="침실1">침실1</option>
-                        <option value="파우더룸">파우더룸</option>
-                        <option value="드레스룸">드레스룸</option>
-                        <option value="침실1발코니">침실1발코니</option>
-                        <option value="대피공간">대피공간</option>
-                        <option value="거실">거실</option>
-                        <option value="주방">주방</option>
-                        <option value="다용도실">다용도실</option>
-                        <option value="팬트리">팬트리</option>
-                        <option value="침실4">침실4</option>
-                        <option value="실외기실">실외기실</option>
-                        <option value="알파룸">알파룸</option>
-                        <option value="욕실1">욕실1</option>
-                        <option value="욕실2">욕실2</option>
+                        {predefinedLocations.map((loc) => (
+                          <option key={loc} value={loc}>
+                            {loc}
+                          </option>
+                        ))}
+                        <option value="__CUSTOM__">기타 (직접입력)</option>
                       </select>
+                      {(form.location === '__CUSTOM__' || (form.location && !predefinedLocations.includes(form.location))) && (
+                        <input
+                          type="text"
+                          value={form.location === '__CUSTOM__' ? '' : form.location}
+                          onChange={(e) => updateFormItem(index, 'location', e.target.value)}
+                          placeholder="하자 위치를 직접 입력하세요"
+                          className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        />
+                      )}
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         하자 분류 <span className="text-red-500">*</span>
                       </label>
-                      <select
-                        value={form.classification}
-                        onChange={(e) => updateFormItem(index, 'classification', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                        disabled={!form.location}
-                      >
-                        <option value="">
-                          {form.location ? '하자 분류를 선택하세요' : '하자 위치를 먼저 선택하세요'}
-                        </option>
-                        {form.location && locationClassifications[form.location]?.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
+                      {form.location && !predefinedLocations.includes(form.location) && form.location !== '__CUSTOM__' ? (
+                        <input
+                          type="text"
+                          value={form.classification}
+                          onChange={(e) => updateFormItem(index, 'classification', e.target.value)}
+                          placeholder="하자 분류를 직접 입력하세요"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        />
+                      ) : (
+                        <>
+                          <select
+                            value={form.classification && form.location && form.location !== '__CUSTOM__' && locationClassifications[form.location]?.includes(form.classification) ? form.classification : (form.classification ? '__CUSTOM__' : '')}
+                            onChange={(e) => {
+                              if (e.target.value === '__CUSTOM__') {
+                                updateFormItem(index, 'classification', '__CUSTOM__')
+                              } else {
+                                updateFormItem(index, 'classification', e.target.value)
+                              }
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                            disabled={!form.location || form.location === '__CUSTOM__'}
+                          >
+                            <option value="">
+                              {form.location === '__CUSTOM__' ? '하자 위치를 먼저 입력하세요' : form.location ? '하자 분류를 선택하세요' : '하자 위치를 먼저 선택하세요'}
+                            </option>
+                            {form.location && form.location !== '__CUSTOM__' && locationClassifications[form.location]?.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                            {form.location && form.location !== '__CUSTOM__' && (
+                              <option value="__CUSTOM__">기타 (직접입력)</option>
+                            )}
+                          </select>
+                          {(form.classification === '__CUSTOM__' || (form.classification && form.location && form.location !== '__CUSTOM__' && !locationClassifications[form.location]?.includes(form.classification))) && (
+                            <input
+                              type="text"
+                              value={form.classification === '__CUSTOM__' ? '' : form.classification}
+                              onChange={(e) => updateFormItem(index, 'classification', e.target.value)}
+                              placeholder="하자 분류를 직접 입력하세요"
+                              className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                            />
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -612,10 +725,28 @@ export default function VisualCheckPage() {
                     <textarea
                       value={form.details}
                       onChange={(e) => updateFormItem(index, 'details', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                      rows={2}
-                      placeholder="상세 설명"
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 ${
+                        form.details.trim().length > 0 && form.details.trim().length < 10
+                          ? 'border-red-500 focus:border-red-500'
+                          : 'border-gray-300'
+                      }`}
+                      rows={3}
+                      placeholder="상세 설명 (10자 이상 입력해주세요)"
                     />
+                    <div className="mt-1 flex justify-between items-center">
+                      <span className={`text-xs ${
+                        form.details.trim().length > 0 && form.details.trim().length < 10
+                          ? 'text-red-500 font-medium'
+                          : 'text-gray-500'
+                      }`}>
+                        {form.details.trim().length > 0 && form.details.trim().length < 10
+                          ? '⚠️ 세부 내용은 10자 이상 입력해야 합니다.'
+                          : `현재 ${form.details.trim().length}자`}
+                      </span>
+                      {form.details.trim().length >= 10 && (
+                        <span className="text-xs text-green-600">✓</span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -729,21 +860,41 @@ export default function VisualCheckPage() {
               </div>
             ))}
 
-            {/* + 추가 버튼 */}
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={addFormItem}
-                className="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
-              >
-                + 하자 정보 추가
-              </button>
+            {/* 사진 추가 버튼 및 하자 정보 추가 버튼 */}
+            <div className="text-center space-y-3">
+              <div>
+                <button
+                  type="button"
+                  onClick={handleAddPhotos}
+                  className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+                >
+                  📷 하자 등록
+                </button>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handlePhotosSelected}
+                  className="hidden"
+                  id="bulk-photo-upload"
+                />
+              </div>
+              <div>
+                {/* <button
+                  type="button"
+                  onClick={addFormItem}
+                  className="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+                >
+                  + 하자 정보 추가
+                </button> */}
+              </div>
             </div>
 
             {/* 안내 문구 */}
             <div className="text-sm text-gray-600 space-y-1 bg-blue-50 p-4 rounded-lg">
               <p className="font-medium">📌 안내사항</p>
-              <p>* 사진은 최대 2장까지만 선택 가능합니다 (전체사진, 확대사진)</p>
+              <p>* "사진 추가" 버튼으로 여러 장을 선택하면 2개씩 묶어서 자동으로 하자 정보 항목이 추가됩니다.</p>
+              <p>* 각 하자 정보 항목은 2장의 사진(근거리 사진, 원거리 사진)으로 구성됩니다.</p>
               <p>* 사진은 5MB미만의 용량 파일만 등록이 가능합니다.</p>
             </div>
 
