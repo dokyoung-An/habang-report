@@ -653,7 +653,7 @@ export default function VisualCheckPage() {
                             {loc}
                           </option>
                         ))}
-                        <option value="__CUSTOM__">기타 (직접입력)</option>
+                        <option value="__CUSTOM__">직접입력</option>
                       </select>
                       {(form.location === '__CUSTOM__' || (form.location && !predefinedLocations.includes(form.location))) && (
                         <input
@@ -701,7 +701,7 @@ export default function VisualCheckPage() {
                               </option>
                             ))}
                             {form.location && form.location !== '__CUSTOM__' && (
-                              <option value="__CUSTOM__">기타 (직접입력)</option>
+                              <option value="__CUSTOM__">직접입력</option>
                             )}
                           </select>
                           {(form.classification === '__CUSTOM__' || (form.classification && form.location && form.location !== '__CUSTOM__' && !locationClassifications[form.location]?.includes(form.classification))) && (

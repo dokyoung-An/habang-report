@@ -248,38 +248,59 @@ export default function FinalReportPage() {
                                 <th className="border border-gray-300 px-4 py-3 text-center">정상</th>
                                 <th className="border border-gray-300 px-4 py-3 text-center">기준치 초과</th>
                                 <th className="border border-gray-300 px-4 py-3 text-center">Pci/L</th>
+                                <th className="border border-gray-300 px-4 py-3 text-center">사진</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {groupedEquipment['라돈'].map((item: any, index: number) => (
-                                <tr key={index} className="hover:bg-gray-50">
-                                  <td className="border border-gray-300 px-4 py-3 font-medium text-center">
-                                    {item.item_name.split('_')[1]}
-                                  </td>
-                                  <td className="border border-gray-300 px-4 py-3 text-center">
-                                    <input
-                                      type="checkbox"
-                                      checked={item.is_checked}
-                                      readOnly
-                                      className="w-5 h-5"
-                                    />
-                                  </td>
-                                  <td className="border border-gray-300 px-4 py-3 text-center">
-                                    <input
-                                      type="checkbox"
-                                      checked={!item.is_checked && item.input_text}
-                                      readOnly
-                                      className="w-5 h-5"
-                                    />
-                                  </td>
-                                  <td className="border border-gray-300 px-4 py-3 text-center">
-                                    <span className="text-sm">
-                                      {item.input_text?.replace(' Pci/L', '') || '-'}
-                                    </span>
-                                    <span className="text-sm text-gray-500 ml-2">Pci/L</span>
-                                  </td>
-                                </tr>
-                              ))}
+                              {groupedEquipment['라돈'].map((item: any, index: number) => {
+                                const inputText = item.input_text || ''
+                                // 이미지 URL 파싱
+                                const imageMatch = inputText.match(/이미지:(https?:\/\/[^\s]+)/)
+                                const imageUrl = imageMatch ? imageMatch[1] : null
+                                // Pci/L 값 추출 (이미지 URL 제외)
+                                const valueText = inputText.replace(/,\s*이미지:.*$/, '').replace(' Pci/L', '').trim()
+                                
+                                return (
+                                  <tr key={index} className="hover:bg-gray-50">
+                                    <td className="border border-gray-300 px-4 py-3 font-medium text-center">
+                                      {item.item_name.split('_')[1]}
+                                    </td>
+                                    <td className="border border-gray-300 px-4 py-3 text-center">
+                                      <input
+                                        type="checkbox"
+                                        checked={item.is_checked}
+                                        readOnly
+                                        className="w-5 h-5"
+                                      />
+                                    </td>
+                                    <td className="border border-gray-300 px-4 py-3 text-center">
+                                      <input
+                                        type="checkbox"
+                                        checked={!item.is_checked && item.input_text}
+                                        readOnly
+                                        className="w-5 h-5"
+                                      />
+                                    </td>
+                                    <td className="border border-gray-300 px-4 py-3 text-center">
+                                      <span className="text-sm">
+                                        {valueText || '-'}
+                                      </span>
+                                      {valueText && <span className="text-sm text-gray-500 ml-2">Pci/L</span>}
+                                    </td>
+                                    <td className="border border-gray-300 px-4 py-3 text-center">
+                                      {imageUrl ? (
+                                        <img
+                                          src={imageUrl}
+                                          alt="라돈 측정 결과"
+                                          className="w-24 h-24 object-cover rounded-lg mx-auto border border-gray-300"
+                                        />
+                                      ) : (
+                                        <span className="text-sm text-gray-400">-</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                )
+                              })}
                             </tbody>
                           </table>
                         </div>
@@ -378,15 +399,24 @@ export default function FinalReportPage() {
                                 <th className="border border-gray-300 px-4 py-3 text-center">항목</th>
                                 <th className="border border-gray-300 px-4 py-3 text-center">정상</th>
                                 <th className="border border-gray-300 px-4 py-3 text-center">하자</th>
+                                <th className="border border-gray-300 px-4 py-3 text-center" colSpan={2}>사진</th>
+                              </tr>
+                              <tr className="bg-blue-50">
+                                <th className="border border-gray-300 px-4 py-3 text-center"></th>
+                                <th className="border border-gray-300 px-4 py-3 text-center"></th>
+                                <th className="border border-gray-300 px-4 py-3 text-center"></th>
+                                <th className="border border-gray-300 px-4 py-3 text-center">좌</th>
+                                <th className="border border-gray-300 px-4 py-3 text-center">우</th>
                               </tr>
                             </thead>
                             <tbody>
                               {groupedEquipment['열화상카메라'].map((item: any, index: number) => {
                                 const details = item.input_text || ''
-                                const mold = details.includes('곰팡이:true')
-                                const condensation = details.includes('결로:true')
-                                const missingInsulation = details.includes('단열재누락:true')
-                                const leakage = details.includes('누수:true')
+                                // 이미지 URL 파싱
+                                const image1Match = details.match(/image1:(https?:\/\/[^\s,]+)/)
+                                const image2Match = details.match(/image2:(https?:\/\/[^\s,]+)/)
+                                const image1Url = image1Match ? image1Match[1] : null
+                                const image2Url = image2Match ? image2Match[1] : null
                                 
                                 return (
                                   <tr key={index} className="hover:bg-gray-50">
@@ -401,45 +431,35 @@ export default function FinalReportPage() {
                                         className="w-5 h-5"
                                       />
                                     </td>
-                                    <td className="border border-gray-300 px-4 py-3">
-                                      <div className="flex justify-evenly space-x-1">
-                                        <label className="flex items-center">
-                                          <input
-                                            type="checkbox"
-                                            checked={mold}
-                                            readOnly
-                                            className="w-4 h-4 mr-1"
-                                          />
-                                          곰팡이
-                                        </label>
-                                        <label className="flex items-center">
-                                          <input
-                                            type="checkbox"
-                                            checked={condensation}
-                                            readOnly
-                                            className="w-4 h-4 mr-1"
-                                          />
-                                          결로
-                                        </label>
-                                        <label className="flex items-center">
-                                          <input
-                                            type="checkbox"
-                                            checked={missingInsulation}
-                                            readOnly
-                                            className="w-4 h-4 mr-1"
-                                          />
-                                          단열재 누락
-                                        </label>
-                                        <label className="flex items-center">
-                                          <input
-                                            type="checkbox"
-                                            checked={leakage}
-                                            readOnly
-                                            className="w-4 h-4 mr-1"
-                                          />
-                                          누수
-                                        </label>
-                                      </div>
+                                    <td className="border border-gray-300 px-4 py-3 text-center">
+                                      <input
+                                        type="checkbox"
+                                        checked={!item.is_checked}
+                                        readOnly
+                                        className="w-5 h-5"
+                                      />
+                                    </td>
+                                    <td className="border border-gray-300 px-4 py-3 text-center">
+                                      {image1Url ? (
+                                        <img
+                                          src={image1Url}
+                                          alt="열화상 좌측 사진"
+                                          className="w-32 h-32 object-cover rounded-lg mx-auto border border-gray-300"
+                                        />
+                                      ) : (
+                                        <span className="text-sm text-gray-400">-</span>
+                                      )}
+                                    </td>
+                                    <td className="border border-gray-300 px-4 py-3 text-center">
+                                      {image2Url ? (
+                                        <img
+                                          src={image2Url}
+                                          alt="열화상 우측 사진"
+                                          className="w-32 h-32 object-cover rounded-lg mx-auto border border-gray-300"
+                                        />
+                                      ) : (
+                                        <span className="text-sm text-gray-400">-</span>
+                                      )}
                                     </td>
                                   </tr>
                                 )

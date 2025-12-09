@@ -309,13 +309,22 @@ export default function EquipmentCheckPage() {
         // 라돈 데이터 파싱
         const radonData: RadonItem[] = data
           .filter(item => item.item_name.startsWith('라돈_'))
-          .map(item => ({
-            location: item.item_name.split('_')[1],
-            normal: item.is_checked,
-            exceeds_standard: !item.is_checked && !!item.input_text,
-            value: item.input_text?.replace(' Pci/L', '') || '',
-            image: (item as any).image_url || null
-          }))
+          .map(item => {
+            const inputText = item.input_text || ''
+            // 이미지 URL 파싱
+            const imageMatch = inputText.match(/이미지:(https?:\/\/[^\s]+)/)
+            const imageUrl = imageMatch ? imageMatch[1] : null
+            // Pci/L 값 추출 (이미지 URL 제외)
+            const valueText = inputText.replace(/,\s*이미지:.*$/, '').replace(' Pci/L', '').trim()
+            
+            return {
+              location: item.item_name.split('_')[1],
+              normal: item.is_checked,
+              exceeds_standard: !item.is_checked && !!inputText,
+              value: valueText,
+              image: imageUrl || null
+            }
+          })
         if (radonData.length > 0) setRadonItems(radonData)
 
         // 포름알데히드 데이터 파싱
@@ -425,10 +434,10 @@ export default function EquipmentCheckPage() {
 
       // 모든 데이터를 하나의 배열로 합치기
       // 라돈 이미지 업로드
+      const baseTimestamp = Date.now()
       const radonDataWithImages = await Promise.all(
         radonItems.map(async (item, index) => {
           let imageUrl = ''
-          let imagePath = ''
           
           if (item.image) {
             if (item.image instanceof File) {
@@ -436,7 +445,7 @@ export default function EquipmentCheckPage() {
               const compressedBlob = await compressImage(item.image)
               const compressedFile = new File([compressedBlob], item.image.name, { type: 'image/jpeg' })
               
-              imagePath = `${reportId}/radon_${Date.now()}_${index}_${item.image.name}`
+              const imagePath = `${reportId}/radon_${baseTimestamp + index * 1000}_${index}_${item.image.name}`
               
               const { error: uploadError } = await supabase.storage
                 .from('inspection-images')
@@ -452,7 +461,6 @@ export default function EquipmentCheckPage() {
             } else {
               // 기존 이미지 URL 사용
               imageUrl = item.image
-              imagePath = item.image
             }
           }
           
@@ -460,9 +468,7 @@ export default function EquipmentCheckPage() {
             report_id: reportId,
             item_name: `라돈_${item.location}`,
             is_checked: item.normal,
-            input_text: `${item.value} Pci/L`,
-            image_url: imageUrl,
-            image_path: imagePath
+            input_text: imageUrl ? `${item.value} Pci/L, 이미지:${imageUrl}` : `${item.value} Pci/L`
           }
         })
       )
@@ -481,13 +487,14 @@ export default function EquipmentCheckPage() {
         ...(await Promise.all(
           thermalItems.map(async (item, index) => {
             const images = []
+            const baseTimestamp = Date.now()
             
             // 이미지1 업로드
             if (item.image1) {
               if (item.image1 instanceof File) {
                 const compressedBlob = await compressImage(item.image1)
                 const compressedFile = new File([compressedBlob], item.image1.name, { type: 'image/jpeg' })
-                const imagePath1 = `${reportId}/thermal_${Date.now()}_${index}_1_${item.image1.name}`
+                const imagePath1 = `${reportId}/thermal_${baseTimestamp + index * 2}_${index}_1_${item.image1.name}`
                 
                 const { error: uploadError1 } = await supabase.storage
                   .from('inspection-images')
@@ -499,9 +506,9 @@ export default function EquipmentCheckPage() {
                   .from('inspection-images')
                   .getPublicUrl(imagePath1)
                 
-                images.push({ url: urlData1.publicUrl, path: imagePath1, type: 'image1' })
+                images.push({ url: urlData1.publicUrl, type: 'image1' })
               } else {
-                images.push({ url: item.image1, path: item.image1, type: 'image1' })
+                images.push({ url: item.image1, type: 'image1' })
               }
             }
             
@@ -510,7 +517,7 @@ export default function EquipmentCheckPage() {
               if (item.image2 instanceof File) {
                 const compressedBlob = await compressImage(item.image2)
                 const compressedFile = new File([compressedBlob], item.image2.name, { type: 'image/jpeg' })
-                const imagePath2 = `${reportId}/thermal_${Date.now()}_${index}_2_${item.image2.name}`
+                const imagePath2 = `${reportId}/thermal_${baseTimestamp + index * 2 + 1}_${index}_2_${item.image2.name}`
                 
                 const { error: uploadError2 } = await supabase.storage
                   .from('inspection-images')
@@ -522,9 +529,9 @@ export default function EquipmentCheckPage() {
                   .from('inspection-images')
                   .getPublicUrl(imagePath2)
                 
-                images.push({ url: urlData2.publicUrl, path: imagePath2, type: 'image2' })
+                images.push({ url: urlData2.publicUrl, type: 'image2' })
               } else {
-                images.push({ url: item.image2, path: item.image2, type: 'image2' })
+                images.push({ url: item.image2, type: 'image2' })
               }
             }
             
@@ -535,9 +542,7 @@ export default function EquipmentCheckPage() {
               report_id: reportId,
               item_name: `열화상카메라_${item.location}`,
               is_checked: item.normal,
-              input_text: imageUrls || '',
-              image_url: images[0]?.url || '',
-              image_path: images[0]?.path || ''
+              input_text: imageUrls || ''
             }
           })
         )),
@@ -595,7 +600,7 @@ export default function EquipmentCheckPage() {
                 <table className="w-full border-collapse border border-gray-300">
                   <thead>
                     <tr className="bg-blue-100">
-                      <th className="border border-gray-300 px-4 py-3 text-center">항목</th>
+                      <th className="border border-gray-300 px-4 py-3 text-center w-48">항목</th>
                       <th className="border border-gray-300 px-4 py-3 text-center">정상</th>
                       <th className="border border-gray-300 px-4 py-3 text-center">기준치 초과</th>
                       <th className="border border-gray-300 px-4 py-3 text-center">사진</th>
@@ -717,7 +722,7 @@ export default function EquipmentCheckPage() {
                 <table className="w-full border-collapse border border-gray-300">
                   <thead>
                     <tr className="bg-blue-100">
-                      <th className="border border-gray-300 px-4 py-3 text-medium">항목</th>
+                      <th className="border border-gray-300 px-4 py-3 text-medium w-48">항목</th>
                       <th className="border border-gray-300 px-4 py-3 text-center">정상</th>
                       <th className="border border-gray-300 px-4 py-3 text-center">기준치 초과</th>
                       <th className="border border-gray-300 px-4 py-3 text-center">HCHO</th>
@@ -799,16 +804,17 @@ export default function EquipmentCheckPage() {
                 <table className="w-full border-collapse border border-gray-300">
                   <thead>
                     <tr className="bg-blue-100">
-                      <th className="border border-gray-300 px-4 py-3 text-medium">항목</th>
+                      <th className="border border-gray-300 px-4 py-3 text-center w-48">항목</th>
                       <th className="border border-gray-300 px-4 py-3 text-center">정상</th>
                       <th className="border border-gray-300 px-4 py-3 text-center">하자</th>
-                      <th className="border border-gray-300 px-4 py-3 text-center">사진</th>
+                      <th className="border border-gray-300 px-4 py-3 text-center">사진(좌측)</th>
+                      <th className="border border-gray-300 px-4 py-3 text-center">사진(우측)</th>
                     </tr>
                   </thead>
                   <tbody>
                     {thermalItems.map((item, index) => (
                       <tr key={index} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 px-4 py-3 text-center">
+                        <td className="border border-gray-300 px-4 py-3 text-center w-48">
                           <input
                             type="text"
                             value={item.location}
@@ -842,83 +848,79 @@ export default function EquipmentCheckPage() {
                             className="w-5 h-5"
                           />
                         </td>
+                        {/* 좌 사진 */}
                         <td className="border border-gray-300 px-4 py-3">
-                          <div className="grid grid-cols-2 gap-2">
-                              {/* 사진 1 */}
-                              <div>
-                                {item.image1 ? (
-                                  <div className="relative">
-                                    <img
-                                      src={item.image1 instanceof File ? URL.createObjectURL(item.image1) : item.image1}
-                                      alt="열화상 사진 1"
-                                      className="w-full h-24 object-cover rounded-lg border border-gray-300"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() => handleThermalChange(index, 'image1', null)}
-                                      className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 text-xs"
-                                    >
-                                      ×
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <label className="cursor-pointer block">
-                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-2 text-center hover:border-gray-400 transition-colors">
-                                      <div className="text-xl text-gray-400 mb-1">📷</div>
-                                      <span className="text-xs text-gray-500">사진 1</span>
-                                    </div>
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      onChange={(e) => {
-                                        const file = e.target.files?.[0]
-                                        if (file) {
-                                          handleThermalChange(index, 'image1', file)
-                                        }
-                                      }}
-                                      className="hidden"
-                                    />
-                                  </label>
-                                )}
-                              </div>
-                              {/* 사진 2 */}
-                              <div>
-                                {item.image2 ? (
-                                  <div className="relative">
-                                    <img
-                                      src={item.image2 instanceof File ? URL.createObjectURL(item.image2) : item.image2}
-                                      alt="열화상 사진 2"
-                                      className="w-full h-24 object-cover rounded-lg border border-gray-300"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() => handleThermalChange(index, 'image2', null)}
-                                      className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 text-xs"
-                                    >
-                                      ×
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <label className="cursor-pointer block">
-                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-2 text-center hover:border-gray-400 transition-colors">
-                                      <div className="text-xl text-gray-400 mb-1">📷</div>
-                                      <span className="text-xs text-gray-500">사진 2</span>
-                                    </div>
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      onChange={(e) => {
-                                        const file = e.target.files?.[0]
-                                        if (file) {
-                                          handleThermalChange(index, 'image2', file)
-                                        }
-                                      }}
-                                      className="hidden"
-                                    />
-                                  </label>
-                                )}
-                              </div>
+                          {item.image1 ? (
+                            <div className="relative">
+                              <img
+                                src={item.image1 instanceof File ? URL.createObjectURL(item.image1) : item.image1}
+                                alt="열화상 좌 사진"
+                                className="w-full h-40 object-cover rounded-lg border border-gray-300"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleThermalChange(index, 'image1', null)}
+                                className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 text-xs"
+                              >
+                                ×
+                              </button>
                             </div>
+                          ) : (
+                            <label className="cursor-pointer block">
+                              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors h-40 flex flex-col items-center justify-center">
+                                <div className="text-2xl text-gray-400 mb-2">📷</div>
+                                <span className="text-sm text-gray-500">좌</span>
+                              </div>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) {
+                                    handleThermalChange(index, 'image1', file)
+                                  }
+                                }}
+                                className="hidden"
+                              />
+                            </label>
+                          )}
+                        </td>
+                        {/* 우 사진 */}
+                        <td className="border border-gray-300 px-4 py-3">
+                          {item.image2 ? (
+                            <div className="relative">
+                              <img
+                                src={item.image2 instanceof File ? URL.createObjectURL(item.image2) : item.image2}
+                                alt="열화상 우 사진"
+                                className="w-full h-40 object-cover rounded-lg border border-gray-300"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleThermalChange(index, 'image2', null)}
+                                className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 text-xs"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ) : (
+                            <label className="cursor-pointer block">
+                              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors h-40 flex flex-col items-center justify-center">
+                                <div className="text-2xl text-gray-400 mb-2">📷</div>
+                                <span className="text-sm text-gray-500">우</span>
+                              </div>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) {
+                                    handleThermalChange(index, 'image2', file)
+                                  }
+                                }}
+                                className="hidden"
+                              />
+                            </label>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -943,7 +945,7 @@ export default function EquipmentCheckPage() {
                 <table className="w-full border-collapse border border-gray-300">
                   <thead>
                     <tr className="bg-blue-100">
-                      <th className="border border-gray-300 px-4 py-3 text-center">항목</th>
+                      <th className="border border-gray-300 px-4 py-3 text-center w-48">항목</th>
                       <th className="border border-gray-300 px-4 py-3 text-center">정상</th>
                       <th className="border border-gray-300 px-4 py-3 text-center">하자</th>
                     </tr>
@@ -1040,7 +1042,7 @@ export default function EquipmentCheckPage() {
                 <table className="w-full border-collapse border border-gray-300">
                   <thead>
                     <tr className="bg-blue-100">
-                      <th className="border border-gray-300 px-4 py-3 text-center">항목</th>
+                      <th className="border border-gray-300 px-4 py-3 text-center w-48">항목</th>
                       <th className="border border-gray-300 px-4 py-3 text-center">정상</th>
                       <th className="border border-gray-300 px-4 py-3 text-center">하자</th>
                       <th className="border border-gray-300 px-4 py-3 text-center">좌측 높이</th>
@@ -1133,7 +1135,7 @@ export default function EquipmentCheckPage() {
                 <table className="w-full border-collapse border border-gray-300">
                   <thead>
                     <tr className="bg-blue-100">
-                      <th className="border border-gray-300 px-4 py-3 text-left">항목</th>
+                      <th className="border border-gray-300 px-4 py-3 text-center w-48">항목</th>
                       <th className="border border-gray-300 px-4 py-3 text-center">정상</th>
                       <th className="border border-gray-300 px-4 py-3 text-center">하자</th>
                       <th className="border border-gray-300 px-4 py-3 text-center">세부내용(하자내용)</th>
