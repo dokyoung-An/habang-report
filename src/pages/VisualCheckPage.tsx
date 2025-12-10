@@ -187,20 +187,6 @@ export default function VisualCheckPage() {
     }
   }
 
-  const addFormItem = () => {
-    setFormItems([...formItems, {
-      space_item: '',
-      title: '',
-      content: '',
-      fullImage: null,
-      closeupImage: null,
-      angleImage: null,
-      location: '',
-      classification: '',
-      details: ''
-    }])
-  }
-
   const removeFormItem = (index: number) => {
     if (formItems.length > 1) {
       setFormItems(formItems.filter((_, i) => i !== index))
@@ -878,15 +864,6 @@ export default function VisualCheckPage() {
                   className="hidden"
                   id="bulk-photo-upload"
                 />
-              </div>
-              <div>
-                {/* <button
-                  type="button"
-                  onClick={addFormItem}
-                  className="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
-                >
-                  + 하자 정보 추가
-                </button> */}
               </div>
             </div>
 
