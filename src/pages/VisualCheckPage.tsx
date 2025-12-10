@@ -206,11 +206,29 @@ export default function VisualCheckPage() {
   }
 
   const updateFormItemImages = (index: number, files: File[]) => {
+    // 파일 검증
+    const invalidFiles: string[] = []
+    const validFiles: File[] = []
+    
+    for (const file of files) {
+      const validation = validateImageFile(file)
+      if (!validation.valid) {
+        invalidFiles.push(`${file.name}: ${validation.error}`)
+      } else {
+        validFiles.push(file)
+      }
+    }
+    
+    // 유효하지 않은 파일이 있으면 알림
+    if (invalidFiles.length > 0) {
+      alert(`❌ 다음 파일을 업로드할 수 없습니다:\n\n${invalidFiles.join('\n')}`)
+    }
+    
     // 최대 2장만 허용
-    const selectedFiles = files.slice(0, 2)
+    const selectedFiles = validFiles.slice(0, 2)
     
     // 2장 이상 선택 시 경고
-    if (files.length > 2) {
+    if (validFiles.length > 2) {
       alert('사진은 최대 2장까지만 선택 가능합니다.\n첫 번째 사진은 전체 사진, 두 번째 사진은 확대 사진으로 저장됩니다.')
     }
     
@@ -235,6 +253,13 @@ export default function VisualCheckPage() {
 
   // 단일 이미지 업로드 (각 영역에서 1장씩)
   const handleSingleImageUpload = async (index: number, imageType: 'fullImage' | 'closeupImage', file: File) => {
+    // 파일 검증
+    const validation = validateImageFile(file)
+    if (!validation.valid) {
+      alert(`❌ ${validation.error}`)
+      return
+    }
+    
     const newFormItems = [...formItems]
     newFormItems[index] = {
       ...newFormItems[index],
@@ -254,7 +279,31 @@ export default function VisualCheckPage() {
     const files = e.target.files
     if (!files || files.length === 0) return
 
+    // 파일 검증
     const fileArray = Array.from(files)
+    const invalidFiles: string[] = []
+    const validFiles: File[] = []
+    
+    for (const file of fileArray) {
+      const validation = validateImageFile(file)
+      if (!validation.valid) {
+        invalidFiles.push(`${file.name}: ${validation.error}`)
+      } else {
+        validFiles.push(file)
+      }
+    }
+    
+    // 유효하지 않은 파일이 있으면 알림
+    if (invalidFiles.length > 0) {
+      alert(`❌ 다음 파일을 업로드할 수 없습니다:\n\n${invalidFiles.join('\n')}\n\n유효한 파일만 업로드됩니다.`)
+    }
+    
+    // 유효한 파일이 없으면 종료
+    if (validFiles.length === 0) {
+      e.target.value = ''
+      return
+    }
+
     const updatedFormItems = [...formItems]
     let fileIndex = 0
 
@@ -262,11 +311,11 @@ export default function VisualCheckPage() {
     if (updatedFormItems.length > 0 && 
         !updatedFormItems[0].fullImage && 
         !updatedFormItems[0].closeupImage && 
-        fileArray.length > 0) {
+        validFiles.length > 0) {
       updatedFormItems[0] = {
         ...updatedFormItems[0],
-        fullImage: fileArray[fileIndex] || null,
-        closeupImage: fileArray[fileIndex + 1] || null,
+        fullImage: validFiles[fileIndex] || null,
+        closeupImage: validFiles[fileIndex + 1] || null,
         angleImage: null
       }
       fileIndex += 2
@@ -274,13 +323,13 @@ export default function VisualCheckPage() {
 
     // 남은 사진들로 새로운 form item 생성 (2개씩 묶어서)
     const newItems: VisualCheckFormItem[] = []
-    for (let i = fileIndex; i < fileArray.length; i += 2) {
+    for (let i = fileIndex; i < validFiles.length; i += 2) {
       newItems.push({
         space_item: '',
         title: '',
         content: '',
-        fullImage: fileArray[i] || null,
-        closeupImage: fileArray[i + 1] || null,
+        fullImage: validFiles[i] || null,
+        closeupImage: validFiles[i + 1] || null,
         angleImage: null,
         location: '',
         classification: '',
@@ -297,38 +346,75 @@ export default function VisualCheckPage() {
     }
   }
 
+  // 파일 유효성 검증 함수
+  const validateImageFile = (file: File): { valid: boolean; error?: string } => {
+    // 파일 크기 검증 (50MB = 50 * 1024 * 1024 bytes)
+    const maxSize = 50 * 1024 * 1024
+    if (file.size > maxSize) {
+      return { valid: false, error: `파일 크기가 너무 큽니다. (최대 50MB, 현재: ${(file.size / 1024 / 1024).toFixed(2)}MB)` }
+    }
+
+    // 파일 형식 검증 (핸드폰 카메라 형식 포함)
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+    // 일부 브라우저에서는 file.type이 비어있을 수 있으므로 확장자도 확인
+    const fileName = file.name.toLowerCase()
+    const hasValidExtension = ['.jpg', '.jpeg', '.png', '.webp', '.gif'].some(ext => fileName.endsWith(ext))
+    
+    if (!validTypes.includes(file.type) && !hasValidExtension) {
+      return { valid: false, error: `지원하지 않는 파일 형식입니다. (JPEG, PNG, WEBP, GIF만 가능)` }
+    }
+
+    return { valid: true }
+  }
+
   const compressImage = async (file: File): Promise<Blob> => {
     return new Promise((resolve, reject) => {
+      // 파일 유효성 검증
+      const validation = validateImageFile(file)
+      if (!validation.valid) {
+        reject(new Error(validation.error))
+        return
+      }
+
       const img = new Image()
-      img.src = URL.createObjectURL(file)
+      const objectUrl = URL.createObjectURL(file)
+      img.src = objectUrl
       
       img.onload = async () => {
-        const canvas = document.createElement('canvas')
-        const maxWidth = 1920
-        const maxHeight = 1080
-        
-        let width = img.width
-        let height = img.height
-        
-        if (width > maxWidth || height > maxHeight) {
-          const ratio = Math.min(maxWidth / width, maxHeight / height)
-          width = width * ratio
-          height = height * ratio
-        }
-        
-        canvas.width = width
-        canvas.height = height
-        
         try {
+          const canvas = document.createElement('canvas')
+          const maxWidth = 1920
+          const maxHeight = 1080
+          
+          let width = img.width
+          let height = img.height
+          
+          if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height)
+            width = width * ratio
+            height = height * ratio
+          }
+          
+          canvas.width = width
+          canvas.height = height
+          
           const result = await pica.resize(img, canvas)
           const blob = await pica.toBlob(result, 'image/jpeg', 0.85)
+          
+          // 메모리 정리
+          URL.revokeObjectURL(objectUrl)
+          
           resolve(blob)
         } catch (error) {
+          URL.revokeObjectURL(objectUrl)
           reject(error)
         }
       }
       
-      img.onerror = reject
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl)
+        reject(new Error('이미지를 로드할 수 없습니다. 지원하는 이미지 형식(JPEG, PNG 등)인지 확인해주세요.'))
+      }
     })
   }
 
@@ -528,28 +614,35 @@ export default function VisualCheckPage() {
           
           // 이미지가 File 타입인 경우 (새로 업로드)
           if (image instanceof File) {
-            // 이미지 압축
-            const compressedBlob = await compressImage(image)
-            const compressedFile = new File([compressedBlob], image.name, { type: 'image/jpeg' })
-            
-            // Supabase Storage에 업로드
-            fileName = `${reportId}/${Date.now()}_${index}_${type}_${image.name}`
-            console.log('Uploading to bucket: inspection-images')
-            console.log('File name:', fileName)
-            console.log('File size:', compressedFile.size)
-            
-            const { error: uploadError } = await supabase.storage
-              .from('inspection-images')
-              .upload(fileName, compressedFile)
+            try {
+              // 이미지 압축
+              const compressedBlob = await compressImage(image)
+              const compressedFile = new File([compressedBlob], image.name, { type: 'image/jpeg' })
+              
+              // Supabase Storage에 업로드
+              fileName = `${reportId}/${Date.now()}_${index}_${type}_${image.name}`
+              console.log(`[육안점검 ${index} ${type}] 업로드 시작: ${image.name} (${(compressedFile.size / 1024).toFixed(2)}KB)`)
+              
+              const { error: uploadError } = await supabase.storage
+                .from('inspection-images')
+                .upload(fileName, compressedFile)
 
-            if (uploadError) throw uploadError
+              if (uploadError) {
+                console.error(`[육안점검 ${index} ${type}] 업로드 실패:`, uploadError)
+                throw new Error(`이미지 업로드 실패 (${form.location} ${type}): ${uploadError.message}`)
+              }
 
-            // Public URL 가져오기
-            const { data: urlData } = supabase.storage
-              .from('inspection-images')
-              .getPublicUrl(fileName)
-            
-            imageUrl = urlData.publicUrl
+              // Public URL 가져오기
+              const { data: urlData } = supabase.storage
+                .from('inspection-images')
+                .getPublicUrl(fileName)
+              
+              imageUrl = urlData.publicUrl
+              console.log(`[육안점검 ${index} ${type}] 업로드 완료`)
+            } catch (error) {
+              console.error(`[육안점검 ${index} ${type}] 에러:`, error)
+              throw new Error(`이미지 업로드 실패 (${form.location} ${type}): ${error instanceof Error ? error.message : String(error)}`)
+            }
           } else {
             // 이미지가 string 타입인 경우 (기존 이미지)
             imageUrl = image
@@ -579,7 +672,18 @@ export default function VisualCheckPage() {
       navigate('/select-report-type')
     } catch (error) {
       console.error('Error saving visual check data:', error)
-      alert('육안점검 데이터 저장에 실패했습니다.')
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.'
+      
+      // 더 자세한 에러 메시지 표시
+      if (errorMessage.includes('파일 크기')) {
+        alert(`❌ 이미지 업로드 실패\n\n${errorMessage}\n\n더 작은 크기의 이미지를 사용해주세요.`)
+      } else if (errorMessage.includes('파일 형식')) {
+        alert(`❌ 이미지 업로드 실패\n\n${errorMessage}\n\nJPEG, PNG 형식의 이미지를 사용해주세요.`)
+      } else if (errorMessage.includes('업로드 실패')) {
+        alert(`❌ 이미지 업로드 실패\n\n${errorMessage}\n\n네트워크 연결을 확인하거나 잠시 후 다시 시도해주세요.`)
+      } else {
+        alert(`❌ 육안점검 데이터 저장에 실패했습니다.\n\n${errorMessage}`)
+      }
     } finally {
       setLoading(false)
     }
@@ -819,12 +923,13 @@ export default function VisualCheckPage() {
                   <input
                     type="file"
                     multiple
-                    accept="image/*"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
                     onChange={(e) => {
                       const files = e.target.files
                       if (files) {
                         updateFormItemImages(index, Array.from(files))
                       }
+                      e.target.value = '' // 같은 파일을 다시 선택할 수 있도록
                     }}
                     className="hidden"
                     id={`multiple-image-upload-${index}`}
@@ -832,12 +937,13 @@ export default function VisualCheckPage() {
                   
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
                     onChange={(e) => {
                       const files = e.target.files
                       if (files && files[0]) {
                         handleSingleImageUpload(index, 'closeupImage', files[0])
                       }
+                      e.target.value = '' // 같은 파일을 다시 선택할 수 있도록
                     }}
                     className="hidden"
                     id={`closeup-image-upload-${index}`}
@@ -859,7 +965,7 @@ export default function VisualCheckPage() {
                 <input
                   type="file"
                   multiple
-                  accept="image/*"
+                  accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
                   onChange={handlePhotosSelected}
                   className="hidden"
                   id="bulk-photo-upload"

@@ -251,39 +251,72 @@ export default function EquipmentCheckPage() {
     }
   }
 
+  // 파일 유효성 검증 함수
+  const validateImageFile = (file: File): { valid: boolean; error?: string } => {
+    // 파일 크기 검증 (50MB = 50 * 1024 * 1024 bytes)
+    const maxSize = 50 * 1024 * 1024
+    if (file.size > maxSize) {
+      return { valid: false, error: `파일 크기가 너무 큽니다. (최대 50MB, 현재: ${(file.size / 1024 / 1024).toFixed(2)}MB)` }
+    }
+
+    // 파일 형식 검증
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+    if (!validTypes.includes(file.type)) {
+      return { valid: false, error: `지원하지 않는 파일 형식입니다. (JPEG, PNG, WEBP, GIF만 가능)` }
+    }
+
+    return { valid: true }
+  }
+
   // 이미지 압축 함수
   const compressImage = async (file: File): Promise<Blob> => {
     return new Promise((resolve, reject) => {
+      // 파일 유효성 검증
+      const validation = validateImageFile(file)
+      if (!validation.valid) {
+        reject(new Error(validation.error))
+        return
+      }
+
       const img = new Image()
-      img.src = URL.createObjectURL(file)
+      const objectUrl = URL.createObjectURL(file)
+      img.src = objectUrl
       
       img.onload = async () => {
-        const canvas = document.createElement('canvas')
-        const maxWidth = 1920
-        const maxHeight = 1080
-        
-        let width = img.width
-        let height = img.height
-        
-        if (width > maxWidth || height > maxHeight) {
-          const ratio = Math.min(maxWidth / width, maxHeight / height)
-          width = width * ratio
-          height = height * ratio
-        }
-        
-        canvas.width = width
-        canvas.height = height
-        
         try {
+          const canvas = document.createElement('canvas')
+          const maxWidth = 1920
+          const maxHeight = 1080
+          
+          let width = img.width
+          let height = img.height
+          
+          if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height)
+            width = width * ratio
+            height = height * ratio
+          }
+          
+          canvas.width = width
+          canvas.height = height
+          
           const result = await pica.resize(img, canvas)
           const blob = await pica.toBlob(result, 'image/jpeg', 0.85)
+          
+          // 메모리 정리
+          URL.revokeObjectURL(objectUrl)
+          
           resolve(blob)
         } catch (error) {
+          URL.revokeObjectURL(objectUrl)
           reject(error)
         }
       }
       
-      img.onerror = reject
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl)
+        reject(new Error('이미지를 로드할 수 없습니다.'))
+      }
     })
   }
 
@@ -441,23 +474,34 @@ export default function EquipmentCheckPage() {
           
           if (item.image) {
             if (item.image instanceof File) {
-              // 새 이미지 업로드
-              const compressedBlob = await compressImage(item.image)
-              const compressedFile = new File([compressedBlob], item.image.name, { type: 'image/jpeg' })
-              
-              const imagePath = `${reportId}/radon_${baseTimestamp + index * 1000}_${index}_${item.image.name}`
-              
-              const { error: uploadError } = await supabase.storage
-                .from('inspection-images')
-                .upload(imagePath, compressedFile)
-              
-              if (uploadError) throw uploadError
-              
-              const { data: urlData } = supabase.storage
-                .from('inspection-images')
-                .getPublicUrl(imagePath)
-              
-              imageUrl = urlData.publicUrl
+              try {
+                // 새 이미지 업로드
+                const compressedBlob = await compressImage(item.image)
+                const compressedFile = new File([compressedBlob], item.image.name, { type: 'image/jpeg' })
+                
+                const imagePath = `${reportId}/radon_${baseTimestamp + index * 1000}_${index}_${item.image.name}`
+                
+                console.log(`[라돈 ${index}] 업로드 시작: ${item.image.name} (${(compressedFile.size / 1024).toFixed(2)}KB)`)
+                
+                const { error: uploadError } = await supabase.storage
+                  .from('inspection-images')
+                  .upload(imagePath, compressedFile)
+                
+                if (uploadError) {
+                  console.error(`[라돈 ${index}] 업로드 실패:`, uploadError)
+                  throw new Error(`이미지 업로드 실패 (${item.location}): ${uploadError.message}`)
+                }
+                
+                const { data: urlData } = supabase.storage
+                  .from('inspection-images')
+                  .getPublicUrl(imagePath)
+                
+                imageUrl = urlData.publicUrl
+                console.log(`[라돈 ${index}] 업로드 완료: ${imageUrl}`)
+              } catch (error) {
+                console.error(`[라돈 ${index}] 에러:`, error)
+                throw new Error(`라돈 이미지 업로드 실패 (${item.location}): ${error instanceof Error ? error.message : String(error)}`)
+              }
             } else {
               // 기존 이미지 URL 사용
               imageUrl = item.image
@@ -492,21 +536,32 @@ export default function EquipmentCheckPage() {
             // 이미지1 업로드
             if (item.image1) {
               if (item.image1 instanceof File) {
-                const compressedBlob = await compressImage(item.image1)
-                const compressedFile = new File([compressedBlob], item.image1.name, { type: 'image/jpeg' })
-                const imagePath1 = `${reportId}/thermal_${baseTimestamp + index * 2}_${index}_1_${item.image1.name}`
-                
-                const { error: uploadError1 } = await supabase.storage
-                  .from('inspection-images')
-                  .upload(imagePath1, compressedFile)
-                
-                if (uploadError1) throw uploadError1
-                
-                const { data: urlData1 } = supabase.storage
-                  .from('inspection-images')
-                  .getPublicUrl(imagePath1)
-                
-                images.push({ url: urlData1.publicUrl, type: 'image1' })
+                try {
+                  const compressedBlob = await compressImage(item.image1)
+                  const compressedFile = new File([compressedBlob], item.image1.name, { type: 'image/jpeg' })
+                  const imagePath1 = `${reportId}/thermal_${baseTimestamp + index * 2}_${index}_1_${item.image1.name}`
+                  
+                  console.log(`[열화상 ${index} 좌측] 업로드 시작: ${item.image1.name} (${(compressedFile.size / 1024).toFixed(2)}KB)`)
+                  
+                  const { error: uploadError1 } = await supabase.storage
+                    .from('inspection-images')
+                    .upload(imagePath1, compressedFile)
+                  
+                  if (uploadError1) {
+                    console.error(`[열화상 ${index} 좌측] 업로드 실패:`, uploadError1)
+                    throw new Error(`이미지 업로드 실패 (${item.location} 좌측): ${uploadError1.message}`)
+                  }
+                  
+                  const { data: urlData1 } = supabase.storage
+                    .from('inspection-images')
+                    .getPublicUrl(imagePath1)
+                  
+                  images.push({ url: urlData1.publicUrl, type: 'image1' })
+                  console.log(`[열화상 ${index} 좌측] 업로드 완료`)
+                } catch (error) {
+                  console.error(`[열화상 ${index} 좌측] 에러:`, error)
+                  throw new Error(`열화상 좌측 이미지 업로드 실패 (${item.location}): ${error instanceof Error ? error.message : String(error)}`)
+                }
               } else {
                 images.push({ url: item.image1, type: 'image1' })
               }
@@ -515,21 +570,32 @@ export default function EquipmentCheckPage() {
             // 이미지2 업로드
             if (item.image2) {
               if (item.image2 instanceof File) {
-                const compressedBlob = await compressImage(item.image2)
-                const compressedFile = new File([compressedBlob], item.image2.name, { type: 'image/jpeg' })
-                const imagePath2 = `${reportId}/thermal_${baseTimestamp + index * 2 + 1}_${index}_2_${item.image2.name}`
-                
-                const { error: uploadError2 } = await supabase.storage
-                  .from('inspection-images')
-                  .upload(imagePath2, compressedFile)
-                
-                if (uploadError2) throw uploadError2
-                
-                const { data: urlData2 } = supabase.storage
-                  .from('inspection-images')
-                  .getPublicUrl(imagePath2)
-                
-                images.push({ url: urlData2.publicUrl, type: 'image2' })
+                try {
+                  const compressedBlob = await compressImage(item.image2)
+                  const compressedFile = new File([compressedBlob], item.image2.name, { type: 'image/jpeg' })
+                  const imagePath2 = `${reportId}/thermal_${baseTimestamp + index * 2 + 1}_${index}_2_${item.image2.name}`
+                  
+                  console.log(`[열화상 ${index} 우측] 업로드 시작: ${item.image2.name} (${(compressedFile.size / 1024).toFixed(2)}KB)`)
+                  
+                  const { error: uploadError2 } = await supabase.storage
+                    .from('inspection-images')
+                    .upload(imagePath2, compressedFile)
+                  
+                  if (uploadError2) {
+                    console.error(`[열화상 ${index} 우측] 업로드 실패:`, uploadError2)
+                    throw new Error(`이미지 업로드 실패 (${item.location} 우측): ${uploadError2.message}`)
+                  }
+                  
+                  const { data: urlData2 } = supabase.storage
+                    .from('inspection-images')
+                    .getPublicUrl(imagePath2)
+                  
+                  images.push({ url: urlData2.publicUrl, type: 'image2' })
+                  console.log(`[열화상 ${index} 우측] 업로드 완료`)
+                } catch (error) {
+                  console.error(`[열화상 ${index} 우측] 에러:`, error)
+                  throw new Error(`열화상 우측 이미지 업로드 실패 (${item.location}): ${error instanceof Error ? error.message : String(error)}`)
+                }
               } else {
                 images.push({ url: item.image2, type: 'image2' })
               }
@@ -578,7 +644,18 @@ export default function EquipmentCheckPage() {
       navigate('/select-report-type')
     } catch (error) {
       console.error('Error saving equipment data:', error)
-      alert('장비점검 데이터 저장에 실패했습니다.')
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.'
+      
+      // 더 자세한 에러 메시지 표시
+      if (errorMessage.includes('파일 크기')) {
+        alert(`❌ 이미지 업로드 실패\n\n${errorMessage}\n\n더 작은 크기의 이미지를 사용해주세요.`)
+      } else if (errorMessage.includes('파일 형식')) {
+        alert(`❌ 이미지 업로드 실패\n\n${errorMessage}\n\nJPEG, PNG 형식의 이미지를 사용해주세요.`)
+      } else if (errorMessage.includes('업로드 실패')) {
+        alert(`❌ 이미지 업로드 실패\n\n${errorMessage}\n\n네트워크 연결을 확인하거나 잠시 후 다시 시도해주세요.`)
+      } else {
+        alert(`❌ 장비점검 데이터 저장에 실패했습니다.\n\n${errorMessage}`)
+      }
     } finally {
       setLoading(false)
     }
@@ -668,10 +745,17 @@ export default function EquipmentCheckPage() {
                                 </div>
                                 <input
                                   type="file"
-                                  accept="image/*"
+                                  accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
                                   onChange={(e) => {
                                     const file = e.target.files?.[0]
                                     if (file) {
+                                      // 파일 검증
+                                      const validation = validateImageFile(file)
+                                      if (!validation.valid) {
+                                        alert(`❌ ${validation.error}`)
+                                        e.target.value = '' // 입력 초기화
+                                        return
+                                      }
                                       handleRadonChange(index, 'image', file)
                                     }
                                   }}
@@ -873,10 +957,17 @@ export default function EquipmentCheckPage() {
                               </div>
                               <input
                                 type="file"
-                                accept="image/*"
+                                accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
                                 onChange={(e) => {
                                   const file = e.target.files?.[0]
                                   if (file) {
+                                    // 파일 검증
+                                    const validation = validateImageFile(file)
+                                    if (!validation.valid) {
+                                      alert(`❌ ${validation.error}`)
+                                      e.target.value = '' // 입력 초기화
+                                      return
+                                    }
                                     handleThermalChange(index, 'image1', file)
                                   }
                                 }}
@@ -910,10 +1001,17 @@ export default function EquipmentCheckPage() {
                               </div>
                               <input
                                 type="file"
-                                accept="image/*"
+                                accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
                                 onChange={(e) => {
                                   const file = e.target.files?.[0]
                                   if (file) {
+                                    // 파일 검증
+                                    const validation = validateImageFile(file)
+                                    if (!validation.valid) {
+                                      alert(`❌ ${validation.error}`)
+                                      e.target.value = '' // 입력 초기화
+                                      return
+                                    }
                                     handleThermalChange(index, 'image2', file)
                                   }
                                 }}
